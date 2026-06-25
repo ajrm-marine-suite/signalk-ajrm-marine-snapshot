@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Signal K AJRM Marine Snapshot</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <h1>AJRM Marine Snapshot</h1>
+          <p id="status" class="status">Loading</p>
+        </div>
+        <div class="actions">
+          <button id="refreshButton" type="button">Refresh</button>
+          <button id="copyButton" type="button" class="primary">Copy Snapshot for ChatGPT</button>
+        </div>
+      </header>
+
+      <section class="layout">
+        <aside class="settings-panel" aria-label="Snapshot settings">
+          <h2>Settings</h2>
+          <label class="check-row">
+            <input id="includeAllTargets" type="checkbox">
+            <span>All AIS targets</span>
+          </label>
+          <label class="check-row">
+            <input id="includeNotifications" type="checkbox">
+            <span>Notifications</span>
+          </label>
+          <label class="check-row">
+            <input id="includeElectrical" type="checkbox">
+            <span>Electrical</span>
+          </label>
+          <label class="check-row">
+            <input id="includeAisPlus" type="checkbox">
+            <span>AJRM Marine server state</span>
+          </label>
+          <label class="check-row">
+            <input id="includeAisPlusHarbourRegions" type="checkbox">
+            <span>AJRM Marine harbour list</span>
+          </label>
+          <label class="check-row">
+            <input id="includeAisPlusAudio" type="checkbox">
+            <span>AJRM Marine Audio state</span>
+          </label>
+          <label class="check-row">
+            <input id="includeCompanion" type="checkbox">
+            <span>Companion setup state</span>
+          </label>
+          <label class="check-row">
+            <input id="includeDebugRaw" type="checkbox">
+            <span>Debug raw</span>
+          </label>
+          <label class="check-row">
+            <input id="includeAnnouncerOutput" type="checkbox" checked>
+            <span>Announcer output</span>
+          </label>
+          <label class="check-row">
+            <input id="includeInstalledApps" type="checkbox" checked>
+            <span>Installed app versions</span>
+          </label>
+
+          <label class="field-row">
+            <span>Target age</span>
+            <input id="maxTargetAgeSeconds" type="number" min="1" step="1">
+          </label>
+          <label class="field-row">
+            <span>AIS range NM</span>
+            <input id="maxAisRangeNm" type="number" min="0.1" step="0.1">
+          </label>
+        </aside>
+
+        <section class="snapshot-panel" aria-label="Snapshot preview">
+          <div class="panel-title">
+            <h2>Snapshot Preview</h2>
+            <span id="updatedAt" class="updated-at">No snapshot</span>
+          </div>
+          <pre id="snapshotPreview">{}</pre>
+        </section>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
