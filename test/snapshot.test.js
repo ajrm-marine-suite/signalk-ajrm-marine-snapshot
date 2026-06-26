@@ -468,6 +468,53 @@ test('snapshot includes long voyage diagnostics from plugin status routes', asyn
   }
 });
 
+test('in-process snapshot API includes long voyage diagnostics', async () => {
+  const server = http.createServer((req, res) => {
+    const pathName = new URL(req.url, 'http://localhost').pathname;
+    if (pathName === '/plugins/signalk-ajrm-marine-capture/status') {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({
+        plugin: 'signalk-ajrm-marine-capture',
+        captureMode: 'debug',
+        voyages: [{ fileName: 'voyage-debug.zip', comment: 'Debug voyage' }]
+      }));
+      return;
+    }
+    if (pathName === '/plugins/signalk-ajrm-marine-simulator/state') {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({
+        plugin: 'signalk-ajrm-marine-simulator',
+        outputEnabled: true,
+        own: { speedKnots: 6.2 }
+      }));
+      return;
+    }
+    res.writeHead(404, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ error: 'not found' }));
+  });
+
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+
+  try {
+    const app = fakeAppWithConfig({}, await fs.mkdtemp(path.join(os.tmpdir(), 'ai-snapshot-api-')));
+    const plugin = startPlugin(app);
+    plugin.start({
+      signalKBaseUrl: `http://127.0.0.1:${server.address().port}`,
+      includeAisPlus: false,
+      includeAisPlusAudio: false,
+      includeInstalledApps: false
+    });
+
+    const apiSnapshot = await app.ajrmMarineSnapshotApi.snapshot({ snapshotPreset: 'debug' });
+
+    assert.equal(apiSnapshot.longVoyageDiagnostics.capture.captureMode, 'debug');
+    assert.equal(apiSnapshot.longVoyageDiagnostics.capture.voyages[0].comment, 'Debug voyage');
+    assert.equal(apiSnapshot.longVoyageDiagnostics.simulator.outputEnabled, true);
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+  }
+});
+
 test('filters own vessel from AIS targets when self MMSI is known', () => {
   const state = createSnapshotState();
   const now = new Date('2026-04-27T14:30:00Z');

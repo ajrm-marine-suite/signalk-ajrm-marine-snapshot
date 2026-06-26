@@ -4,8 +4,8 @@
 
 It is not an MCP server and it does not call any AI service. It keeps selected Signal K values in memory, exposes a local snapshot endpoint, and provides a small web UI for previewing and copying the JSON.
 
-Version `0.5.2` adds long-voyage diagnostics from Traffic, Capture, Logger,
-DR Plotter, GPS Integrity, Simulator, Notifications, and chart resources.
+Version `0.5.3` includes the same long-voyage diagnostics when Capture calls
+Snapshot through the in-process API for unattended voyage recording.
 
 Version `0.2.3` adds named snapshot presets for AJRM Marine Capture. The
 `voyage` preset is compact and suitable for routine start/stop voyage records.
@@ -128,7 +128,7 @@ cd ~/.signalk
 2. Install the private GitHub repo as a Signal K dependency:
 
 ```sh
-npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.5.2 --omit=dev --no-package-lock
+npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.5.3 --omit=dev --no-package-lock
 ```
 
 3. Restart Signal K:
@@ -149,7 +149,7 @@ Reinstall it from `~/.signalk` so npm records it again:
 
 ```sh
 cd ~/.signalk
-npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.5.2 --omit=dev --no-package-lock
+npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.5.3 --omit=dev --no-package-lock
 sudo systemctl restart signalk
 ```
 
@@ -163,7 +163,7 @@ ssh -T git@github.com
 
 ```sh
 cd ~/.signalk
-npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.5.2 --omit=dev --no-package-lock
+npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.5.3 --omit=dev --no-package-lock
 sudo systemctl restart signalk
 ```
 

@@ -149,6 +149,12 @@ module.exports = function startPlugin(app) {
           description: 'Adds raw context, timestamps, and closest-approach details. Leave disabled for compact sharing.',
           default: DEFAULT_OPTIONS.includeDebugRaw
         },
+        signalKBaseUrl: {
+          type: 'string',
+          title: 'Local Signal K base URL for in-process diagnostics',
+          description: 'Used only when another plugin calls Snapshot directly instead of through HTTP. Keep this as the local Signal K HTTPS URL on the Pi.',
+          default: DEFAULT_OPTIONS.signalKBaseUrl
+        },
         allowRemoteAccess: {
           type: 'boolean',
           title: 'Allow remote HTTP/browser access',
@@ -288,7 +294,7 @@ module.exports = function startPlugin(app) {
         if (requestOptions.includeSuiteDiagnostics) {
           const diagnostics = loadSuiteDiagnostics();
           if (diagnostics) snapshot.suiteDiagnostics = diagnostics;
-          const longVoyageDiagnostics = await loadLongVoyageDiagnostics(req);
+          const longVoyageDiagnostics = await loadLongVoyageDiagnostics(path => fetchLocalJson(req, path));
           if (longVoyageDiagnostics) snapshot.longVoyageDiagnostics = longVoyageDiagnostics;
         }
         res.set('Cache-Control', 'no-store');
@@ -339,12 +345,16 @@ module.exports = function startPlugin(app) {
     return buildSnapshot(state, requestOptions, new Date());
   }
 
-  function buildInProcessSnapshot(options = {}) {
+  async function buildInProcessSnapshot(options = {}) {
     const requestOptions = optionsWithQueryOverrides(currentOptions, options);
     const snapshot = buildBaseSnapshot(requestOptions);
     if (requestOptions.includeSuiteDiagnostics) {
       const diagnostics = loadSuiteDiagnostics();
       if (diagnostics) snapshot.suiteDiagnostics = diagnostics;
+      const longVoyageDiagnostics = await loadLongVoyageDiagnostics(path =>
+        fetchBaseJson(requestOptions.signalKBaseUrl, path)
+      );
+      if (longVoyageDiagnostics) snapshot.longVoyageDiagnostics = longVoyageDiagnostics;
     }
     if (requestOptions.includeInstalledApps) {
       const installedApps = loadInstalledApps();
@@ -483,7 +493,7 @@ module.exports = function startPlugin(app) {
     };
   }
 
-  async function loadLongVoyageDiagnostics(req) {
+  async function loadLongVoyageDiagnostics(fetchJson) {
     const [
       traffic,
       capture,
@@ -494,14 +504,14 @@ module.exports = function startPlugin(app) {
       notifications,
       charts
     ] = await Promise.all([
-      fetchLocalJson(req, '/plugins/signalk-ajrm-marine-traffic/status'),
-      fetchLocalJson(req, '/plugins/signalk-ajrm-marine-capture/status'),
-      fetchLocalJson(req, '/signalk/v1/api/ajrmMarineLogger/status'),
-      fetchLocalJson(req, '/plugins/signalk-ajrm-marine-dr-plotter/status'),
-      fetchLocalJson(req, '/plugins/signalk-ajrm-marine-gps-integrity/status'),
-      fetchLocalJson(req, '/plugins/signalk-ajrm-marine-simulator/state'),
-      fetchLocalJson(req, '/plugins/signalk-ajrm-marine-notifications/status'),
-      fetchLocalJson(req, '/signalk/v1/api/resources/charts')
+      fetchJson('/plugins/signalk-ajrm-marine-traffic/status'),
+      fetchJson('/plugins/signalk-ajrm-marine-capture/status'),
+      fetchJson('/signalk/v1/api/ajrmMarineLogger/status'),
+      fetchJson('/plugins/signalk-ajrm-marine-dr-plotter/status'),
+      fetchJson('/plugins/signalk-ajrm-marine-gps-integrity/status'),
+      fetchJson('/plugins/signalk-ajrm-marine-simulator/state'),
+      fetchJson('/plugins/signalk-ajrm-marine-notifications/status'),
+      fetchJson('/signalk/v1/api/resources/charts')
     ]);
 
     const output = {};
@@ -517,8 +527,24 @@ module.exports = function startPlugin(app) {
   }
 
   async function fetchLocalJson(req, path) {
+    const url = new URL(`${req.protocol}://${req.get('host')}${path}`);
+    return fetchJsonUrl(url, {
+      cookie: req.get('cookie') || ''
+    });
+  }
+
+  async function fetchBaseJson(baseUrl, requestPath) {
+    if (!baseUrl) return null;
+    try {
+      return fetchJsonUrl(new URL(requestPath, baseUrl));
+    } catch (err) {
+      logDebug(`Snapshot URL build failed for ${requestPath}: ${err && err.message ? err.message : err}`);
+      return null;
+    }
+  }
+
+  async function fetchJsonUrl(url, extraHeaders = {}) {
     return new Promise(resolve => {
-      const url = new URL(`${req.protocol}://${req.get('host')}${path}`);
       const transport = url.protocol === 'https:' ? https : http;
       const request = transport.request(
         url,
@@ -527,7 +553,7 @@ module.exports = function startPlugin(app) {
           rejectUnauthorized: false,
           headers: {
             accept: 'application/json',
-            cookie: req.get('cookie') || ''
+            ...extraHeaders
           }
         },
         response => {
@@ -544,7 +570,7 @@ module.exports = function startPlugin(app) {
             try {
               resolve(JSON.parse(body));
             } catch (err) {
-              logDebug(`Snapshot JSON parse failed for ${path}: ${err && err.message ? err.message : err}`);
+              logDebug(`Snapshot JSON parse failed for ${url.pathname}: ${err && err.message ? err.message : err}`);
               resolve(null);
             }
           });
@@ -554,7 +580,7 @@ module.exports = function startPlugin(app) {
         request.destroy(new Error('timeout'));
       });
       request.on('error', err => {
-        logDebug(`Snapshot fetch failed for ${path}: ${err && err.message ? err.message : err}`);
+        logDebug(`Snapshot fetch failed for ${url.pathname}: ${err && err.message ? err.message : err}`);
         resolve(null);
       });
       request.end();

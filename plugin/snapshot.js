@@ -21,6 +21,7 @@ const DEFAULT_OPTIONS = Object.freeze({
   includeInstalledApps: true,
   includeSuiteDiagnostics: true,
   includeDebugRaw: false,
+  signalKBaseUrl: 'https://127.0.0.1:3443',
   allowRemoteAccess: false
 });
 
@@ -119,6 +120,7 @@ function normalizeOptions(input) {
     includeInstalledApps: booleanValue(source.includeInstalledApps, DEFAULT_OPTIONS.includeInstalledApps),
     includeSuiteDiagnostics: booleanValue(source.includeSuiteDiagnostics, DEFAULT_OPTIONS.includeSuiteDiagnostics),
     includeDebugRaw: booleanValue(source.includeDebugRaw, DEFAULT_OPTIONS.includeDebugRaw),
+    signalKBaseUrl: textValue(source.signalKBaseUrl, DEFAULT_OPTIONS.signalKBaseUrl),
     allowRemoteAccess: booleanValue(source.allowRemoteAccess, DEFAULT_OPTIONS.allowRemoteAccess)
   };
 }
@@ -129,6 +131,7 @@ function optionsWithQueryOverrides(baseOptions, query) {
   const options = requestedPreset
     ? normalizeOptions({
         snapshotPreset: requestedPreset,
+        signalKBaseUrl: baseOptions?.signalKBaseUrl,
         allowRemoteAccess: baseOptions?.allowRemoteAccess
       })
     : normalizeOptions(baseOptions);
@@ -1225,6 +1228,12 @@ function booleanValue(value, fallback) {
     if (value.toLowerCase() === 'false') return false;
   }
   return fallback;
+}
+
+function textValue(value, fallback) {
+  if (typeof value !== 'string') return fallback;
+  const trimmed = value.trim();
+  return trimmed || fallback;
 }
 
 function setBooleanOverride(options, query, key) {

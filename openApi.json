@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Signal K AJRM Marine Snapshot",
-    "version": "0.5.2",
+    "version": "0.5.3",
     "description": "Local snapshot endpoints for a compact Signal K JSON payload intended for manual ChatGPT copy/paste."
   },
   "servers": [
