@@ -545,7 +545,6 @@ module.exports = function startPlugin(app) {
   function summarizeProfile(profile) {
     return {
       enabled: profile.enabled,
-      guard: profile.guard,
       cpa: profile.cpa,
       warning: profile.warning,
       danger: profile.danger,

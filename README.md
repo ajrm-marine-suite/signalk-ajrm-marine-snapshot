@@ -4,6 +4,9 @@
 
 It is not an MCP server and it does not call any AI service. It keeps selected Signal K values in memory, exposes a local snapshot endpoint, and provides a small web UI for previewing and copying the JSON.
 
+Version `0.5.1` removes obsolete profile-range data from compact AJRM Marine
+snapshots.
+
 Version `0.2.3` adds named snapshot presets for AJRM Marine Capture. The
 `voyage` preset is compact and suitable for routine start/stop voyage records.
 The `debug` preset includes all targets plus raw debug fields for event
@@ -116,7 +119,7 @@ cd ~/.signalk
 2. Install the private GitHub repo as a Signal K dependency:
 
 ```sh
-npm install git+ssh://git@ssh.github.com:443/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.5.0 --omit=dev
+npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.5.1 --omit=dev --no-package-lock
 ```
 
 3. Restart Signal K:
@@ -137,7 +140,7 @@ Reinstall it from `~/.signalk` so npm records it again:
 
 ```sh
 cd ~/.signalk
-npm install git+ssh://git@ssh.github.com:443/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.5.0 --omit=dev
+npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.5.1 --omit=dev --no-package-lock
 sudo systemctl restart signalk
 ```
 
