@@ -4,8 +4,8 @@
 
 It is not an MCP server and it does not call any AI service. It keeps selected Signal K values in memory, exposes a local snapshot endpoint, and provides a small web UI for previewing and copying the JSON.
 
-Version `0.5.1` removes obsolete profile-range data from compact AJRM Marine
-snapshots.
+Version `0.5.2` adds long-voyage diagnostics from Traffic, Capture, Logger,
+DR Plotter, GPS Integrity, Simulator, Notifications, and chart resources.
 
 Version `0.2.3` adds named snapshot presets for AJRM Marine Capture. The
 `voyage` preset is compact and suitable for routine start/stop voyage records.
@@ -22,6 +22,7 @@ investigation.
 - AJRM Marine harbour region bounds only when the separate harbour-list option is enabled
 - AJRM Marine Audio render, queue, local playback, radio stream, volume, ping, voice, and recent event status when AJRM Marine Audio is installed
 - Installed Signal K plugin/webapp package names, display names, versions, and Git/npm source specs
+- Long-voyage diagnostics from AJRM Marine Traffic, Capture, Logger, DR Plotter, GPS Integrity, Simulator, Notifications, and compact Signal K chart resources
 - Active `vessels.self.notifications.*` messages
 - Legacy Announce AIS Messages live/spoken output when enabled
 
@@ -42,6 +43,14 @@ from:
 - `/plugins/signalk-ajrm-marine-display/alertEvents`
 - `/plugins/signalk-ajrm-marine-display/announcementLog`
 - `/plugins/signalk-ajrm-marine-audio/status`
+- `/plugins/signalk-ajrm-marine-traffic/status`
+- `/plugins/signalk-ajrm-marine-capture/status`
+- `/signalk/v1/api/ajrmMarineLogger/status`
+- `/plugins/signalk-ajrm-marine-dr-plotter/status`
+- `/plugins/signalk-ajrm-marine-gps-integrity/status`
+- `/plugins/signalk-ajrm-marine-simulator/state`
+- `/plugins/signalk-ajrm-marine-notifications/status`
+- `/signalk/v1/api/resources/charts`
 - `/plugins/announce-ais-messages/api/state`
 
 ## Endpoints
@@ -119,7 +128,7 @@ cd ~/.signalk
 2. Install the private GitHub repo as a Signal K dependency:
 
 ```sh
-npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.5.1 --omit=dev --no-package-lock
+npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.5.2 --omit=dev --no-package-lock
 ```
 
 3. Restart Signal K:
@@ -140,7 +149,7 @@ Reinstall it from `~/.signalk` so npm records it again:
 
 ```sh
 cd ~/.signalk
-npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.5.1 --omit=dev --no-package-lock
+npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.5.2 --omit=dev --no-package-lock
 sudo systemctl restart signalk
 ```
 
@@ -154,7 +163,7 @@ ssh -T git@github.com
 
 ```sh
 cd ~/.signalk
-npm install git+ssh://git@ssh.github.com:443/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.5.0 --omit=dev
+npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.5.2 --omit=dev --no-package-lock
 sudo systemctl restart signalk
 ```
 

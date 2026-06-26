@@ -288,6 +288,8 @@ module.exports = function startPlugin(app) {
         if (requestOptions.includeSuiteDiagnostics) {
           const diagnostics = loadSuiteDiagnostics();
           if (diagnostics) snapshot.suiteDiagnostics = diagnostics;
+          const longVoyageDiagnostics = await loadLongVoyageDiagnostics(req);
+          if (longVoyageDiagnostics) snapshot.longVoyageDiagnostics = longVoyageDiagnostics;
         }
         res.set('Cache-Control', 'no-store');
         res.status(200).json(snapshot);
@@ -479,6 +481,39 @@ module.exports = function startPlugin(app) {
       spokenRecent: compactAnnouncerEntries(state.spoken, 8),
       logRecent: compactAnnouncerEntries(state.log, 8)
     };
+  }
+
+  async function loadLongVoyageDiagnostics(req) {
+    const [
+      traffic,
+      capture,
+      logger,
+      drPlotter,
+      gpsIntegrity,
+      simulator,
+      notifications,
+      charts
+    ] = await Promise.all([
+      fetchLocalJson(req, '/plugins/signalk-ajrm-marine-traffic/status'),
+      fetchLocalJson(req, '/plugins/signalk-ajrm-marine-capture/status'),
+      fetchLocalJson(req, '/signalk/v1/api/ajrmMarineLogger/status'),
+      fetchLocalJson(req, '/plugins/signalk-ajrm-marine-dr-plotter/status'),
+      fetchLocalJson(req, '/plugins/signalk-ajrm-marine-gps-integrity/status'),
+      fetchLocalJson(req, '/plugins/signalk-ajrm-marine-simulator/state'),
+      fetchLocalJson(req, '/plugins/signalk-ajrm-marine-notifications/status'),
+      fetchLocalJson(req, '/signalk/v1/api/resources/charts')
+    ]);
+
+    const output = {};
+    if (traffic) output.traffic = compactTrafficStatus(traffic);
+    if (capture) output.capture = compactCaptureStatus(capture);
+    if (logger) output.logger = compactLoggerStatus(logger);
+    if (drPlotter) output.drPlotter = compactDrPlotterStatus(drPlotter);
+    if (gpsIntegrity) output.gpsIntegrity = compactGpsIntegrityStatus(gpsIntegrity);
+    if (simulator) output.simulator = compactSimulatorState(simulator);
+    if (notifications) output.notifications = compactNotificationsStatus(notifications);
+    if (charts) output.chartResources = compactChartResources(charts);
+    return Object.keys(output).length ? output : null;
   }
 
   async function fetchLocalJson(req, path) {
@@ -701,6 +736,263 @@ module.exports = function startPlugin(app) {
     const output = {};
     ['ts', 'type', 'event', 'message'].forEach(key => copyIfPresent(output, event, key));
     return output;
+  }
+
+  function compactTrafficStatus(status) {
+    const output = {};
+    [
+      'plugin',
+      'version',
+      'ok',
+      'audioPolicy',
+      'capabilities'
+    ].forEach(key => copyIfPresent(output, status, key));
+    if (status.autoProfile) output.autoProfile = status.autoProfile;
+    if (status.profiles) output.profiles = summarizeCollisionProfiles(status.profiles);
+    if (Array.isArray(status.targets)) {
+      output.targets = {
+        count: status.targets.length,
+        recent: status.targets.slice(0, 20).map(compactTargetState).filter(Boolean)
+      };
+    } else if (status.targets && typeof status.targets === 'object') {
+      const targets = Object.values(status.targets).map(compactTargetState).filter(Boolean);
+      output.targets = {
+        count: targets.length,
+        recent: targets.slice(0, 20)
+      };
+    }
+    return output;
+  }
+
+  function compactCaptureStatus(status) {
+    const output = {};
+    [
+      'plugin',
+      'version',
+      'ok',
+      'timestamp',
+      'enabled',
+      'state',
+      'captureMode',
+      'captureFileMode',
+      'speedKnots',
+      'voyageComment',
+      'autoStartInhibited',
+      'loggerPlaybackActive',
+      'movementSuppressedUntilFreshSpeed',
+      'thresholds',
+      'disk',
+      'currentVoyage',
+      'lastBundle',
+      'ajrmMarineLogger'
+    ].forEach(key => copyIfPresent(output, status, key));
+    if (Array.isArray(status.voyages)) {
+      output.voyages = compactFileList(status.voyages, 12);
+    }
+    if (Array.isArray(status.recentEvents)) {
+      output.recentEvents = status.recentEvents.slice(0, 20).map(compactEvent);
+    }
+    return output;
+  }
+
+  function compactLoggerStatus(status) {
+    const output = {};
+    [
+      'plugin',
+      'version',
+      'ok',
+      'timestamp',
+      'options',
+      'paths',
+      'disk',
+      'buffer',
+      'recording',
+      'playback',
+      'stats'
+    ].forEach(key => copyIfPresent(output, status, key));
+    if (Array.isArray(status.voyages)) output.voyages = compactFileList(status.voyages, 12);
+    if (Array.isArray(status.captures)) output.captures = compactFileList(status.captures, 12);
+    if (Array.isArray(status.clips)) output.clips = compactFileList(status.clips, 12);
+    if (Array.isArray(status.recentEvents)) {
+      output.recentEvents = status.recentEvents.slice(0, 20).map(compactEvent);
+    }
+    return output;
+  }
+
+  function compactDrPlotterStatus(status) {
+    const output = {};
+    [
+      'plugin',
+      'version',
+      'ok',
+      'enabled',
+      'startedAt',
+      'refreshIntervalMs',
+      'noAisTargets',
+      'defaults',
+      'ajrmMarineGpsIntegrityStatePath',
+      'ajrmMarineGpsIntegrity'
+    ].forEach(key => copyIfPresent(output, status, key));
+    return output;
+  }
+
+  function compactGpsIntegrityStatus(status) {
+    const output = {};
+    [
+      'plugin',
+      'version',
+      'ok',
+      'enabled',
+      'statePath',
+      'notificationPath',
+      'state',
+      'sample',
+      'trustedPrefix',
+      'deadReckoningPrefix',
+      'countersPrefix'
+    ].forEach(key => copyIfPresent(output, status, key));
+    return output;
+  }
+
+  function compactSimulatorState(state) {
+    const output = {};
+    [
+      'plugin',
+      'version',
+      'ok',
+      'running',
+      'outputEnabled',
+      'targetAutopilotEnabled',
+      'environment',
+      'own',
+      'gpsFaultModes'
+    ].forEach(key => copyIfPresent(output, state, key));
+    if (Array.isArray(state.targets)) {
+      output.targets = {
+        count: state.targets.length,
+        enabled: state.targets.filter(target => target && target.enabled !== false).length,
+        recent: state.targets.slice(0, 20).map(compactSimulatorTarget)
+      };
+    }
+    return output;
+  }
+
+  function compactNotificationsStatus(status) {
+    const output = {};
+    [
+      'plugin',
+      'version',
+      'ok',
+      'serverTime',
+      'sessionId',
+      'sequence',
+      'audioSequence',
+      'updatedAt',
+      'active'
+    ].forEach(key => copyIfPresent(output, status, key));
+    if (Array.isArray(status.recentActivity)) {
+      output.recentActivity = status.recentActivity.slice(0, 30).map(compactEvent);
+    }
+    if (Array.isArray(status.history)) {
+      output.historyRecent = status.history.slice(0, 30).map(compactEvent);
+    }
+    return output;
+  }
+
+  function compactChartResources(charts) {
+    if (!charts || typeof charts !== 'object') return undefined;
+    const entries = Object.entries(charts).map(([id, chart]) => compactChartResource(id, chart)).filter(Boolean);
+    return {
+      count: entries.length,
+      charts: entries
+    };
+  }
+
+  function compactChartResource(id, chart) {
+    if (!chart || typeof chart !== 'object') return null;
+    const output = { id };
+    [
+      'identifier',
+      'name',
+      'description',
+      'format',
+      'type',
+      'scale',
+      'minzoom',
+      'maxzoom',
+      'bounds'
+    ].forEach(key => copyIfPresent(output, chart, key));
+    return output;
+  }
+
+  function compactFileList(files, limit) {
+    return files.slice(0, limit).map(file => {
+      if (!file || typeof file !== 'object') return file;
+      const output = {};
+      [
+        'fileName',
+        'displayFileName',
+        'bytes',
+        'modifiedAt',
+        'startedAt',
+        'stoppedAt',
+        'from',
+        'to',
+        'durationSeconds',
+        'comment',
+        'downloadUrl'
+      ].forEach(key => copyIfPresent(output, file, key));
+      return output;
+    });
+  }
+
+  function compactSimulatorTarget(target) {
+    if (!target || typeof target !== 'object') return target;
+    const output = {};
+    [
+      'mmsi',
+      'name',
+      'enabled',
+      'type',
+      'sizeCategory',
+      'lat',
+      'lon',
+      'courseDeg',
+      'headingDeg',
+      'speedKnots',
+      'gpsFaultMode',
+      'autopilotEnabled',
+      'turnIntervalSeconds'
+    ].forEach(key => copyIfPresent(output, target, key));
+    return output;
+  }
+
+  function compactEvent(event) {
+    if (!event || typeof event !== 'object') return event;
+    const output = {};
+    [
+      'at',
+      'ts',
+      'timestamp',
+      'type',
+      'event',
+      'category',
+      'severity',
+      'state',
+      'message',
+      'id',
+      'key',
+      'source',
+      'target',
+      'targetContext',
+      'vesselName',
+      'displayName',
+      'speechLabel',
+      'mmsi',
+      'priority',
+      'reason'
+    ].forEach(key => copyIfPresent(output, event, key));
+    return Object.keys(output).length ? output : event;
   }
 
   function compactAnnouncerStatus(status) {

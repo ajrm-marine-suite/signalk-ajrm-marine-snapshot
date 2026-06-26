@@ -349,6 +349,125 @@ test('snapshot includes installed Signal K app versions', async () => {
   });
 });
 
+test('snapshot includes long voyage diagnostics from plugin status routes', async () => {
+  const responses = {
+    '/plugins/signalk-ajrm-marine-traffic/status': {
+      plugin: 'signalk-ajrm-marine-traffic',
+      version: '0.5.6',
+      ok: true,
+      profiles: {
+        current: 'harbor',
+        harbor: { enabled: true, cpa: 0.5, tcpaLookahead: 1800 }
+      },
+      targets: [
+        { mmsi: '235900005', name: 'HARBOUR TUG', lastAlarmState: 'warning' }
+      ]
+    },
+    '/plugins/signalk-ajrm-marine-capture/status': {
+      plugin: 'signalk-ajrm-marine-capture',
+      version: '0.5.3',
+      enabled: true,
+      state: 'watching',
+      voyages: [
+        {
+          fileName: 'voyage-20260626T201629Z.zip',
+          bytes: 101883,
+          comment: 'Long soak test'
+        }
+      ],
+      recentEvents: [
+        { at: '2026-06-26T20:31:31.840Z', type: 'voyage-stopped', message: 'manual' }
+      ]
+    },
+    '/signalk/v1/api/ajrmMarineLogger/status': {
+      plugin: 'signalk-ajrm-marine-logger',
+      version: '0.5.5',
+      playback: { active: false, rate: 'max' },
+      stats: { playbackSent: 47897 },
+      voyages: [
+        { fileName: 'voyage-20260626T201629Z.zip', bytes: 101883 }
+      ]
+    },
+    '/plugins/signalk-ajrm-marine-dr-plotter/status': {
+      plugin: 'signalk-ajrm-marine-dr-plotter',
+      version: '0.5.0',
+      enabled: true,
+      noAisTargets: true
+    },
+    '/plugins/signalk-ajrm-marine-gps-integrity/status': {
+      plugin: 'signalk-ajrm-marine-gps-integrity',
+      version: '0.5.0',
+      state: 'trusted',
+      sample: { sogKnots: 5.4 }
+    },
+    '/plugins/signalk-ajrm-marine-simulator/state': {
+      plugin: 'signalk-ajrm-marine-simulator',
+      version: '0.5.4',
+      outputEnabled: true,
+      own: { speedKnots: 5, gpsFaultMode: 'normal' },
+      targets: [
+        { mmsi: '235900005', name: 'HARBOUR TUG', enabled: true, speedKnots: 3.2 }
+      ]
+    },
+    '/plugins/signalk-ajrm-marine-notifications/status': {
+      plugin: 'signalk-ajrm-marine-notifications',
+      version: '0.5.1',
+      active: [],
+      history: [
+        { ts: '2026-06-26T20:20:00Z', type: 'audio', message: 'Traffic advisory' }
+      ]
+    },
+    '/signalk/v1/api/resources/charts': {
+      '0002-0': {
+        name: 'W-0002-0',
+        bounds: [-13.79, 48.16, 3.41, 62.83],
+        minzoom: 8,
+        maxzoom: 9,
+        scale: 1600000,
+        format: 'png',
+        type: 'tilelayer'
+      }
+    }
+  };
+
+  const server = http.createServer((req, res) => {
+    const pathName = new URL(req.url, 'http://localhost').pathname;
+    if (responses[pathName]) {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify(responses[pathName]));
+      return;
+    }
+    res.writeHead(404, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ error: 'not found' }));
+  });
+
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+
+  try {
+    const route = snapshotRouteHandler(startPlugin(fakeAppWithConfig({}, await fs.mkdtemp(path.join(os.tmpdir(), 'ai-snapshot-long-')))));
+    const snapshot = await invokeSnapshotRoute(route, `127.0.0.1:${server.address().port}`, {
+      includeAisPlus: 'false',
+      includeAisPlusAudio: 'false',
+      includeCompanion: 'false',
+      includeAnnouncerOutput: 'false',
+      includeInstalledApps: 'false',
+      includeSuiteDiagnostics: 'true'
+    });
+
+    assert.equal(snapshot.longVoyageDiagnostics.traffic.targets.count, 1);
+    assert.equal(snapshot.longVoyageDiagnostics.capture.voyages[0].comment, 'Long soak test');
+    assert.equal(snapshot.longVoyageDiagnostics.logger.playback.rate, 'max');
+    assert.equal(snapshot.longVoyageDiagnostics.drPlotter.noAisTargets, true);
+    assert.equal(snapshot.longVoyageDiagnostics.gpsIntegrity.sample.sogKnots, 5.4);
+    assert.equal(snapshot.longVoyageDiagnostics.simulator.targets.count, 1);
+    assert.equal(snapshot.longVoyageDiagnostics.notifications.historyRecent[0].message, 'Traffic advisory');
+    assert.equal(snapshot.longVoyageDiagnostics.chartResources.count, 1);
+    assert.deepEqual(snapshot.longVoyageDiagnostics.chartResources.charts[0].bounds, [-13.79, 48.16, 3.41, 62.83]);
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+  }
+});
+
 test('filters own vessel from AIS targets when self MMSI is known', () => {
   const state = createSnapshotState();
   const now = new Date('2026-04-27T14:30:00Z');
