@@ -138,7 +138,7 @@ module.exports = function startPlugin(app) {
         includeSuiteDiagnostics: {
           type: 'boolean',
           title: 'Include suite diagnostic plugin state',
-          description: 'Adds current plugin telemetry for CapturePlus, Voyage Capture, AJRM Marine Pi Controller, Notifications Plus, Traffic Core, Display, Audio, Companion, Console, and GPS Integrity when present.',
+          description: 'Adds current plugin telemetry for AJRM Marine Logger, Capture, Pi Controller, Notifications, Traffic, Display, Audio, Console, and GPS Integrity when present.',
           default: DEFAULT_OPTIONS.includeSuiteDiagnostics
         },
         includeDebugRaw: {

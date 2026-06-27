@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.5
+
+- Rename snapshot telemetry descriptions to current AJRM Marine app names.
+
 ## 0.5.4
 
 - Remove obsolete simulator package names from the AJRM Marine suite package inventory.
