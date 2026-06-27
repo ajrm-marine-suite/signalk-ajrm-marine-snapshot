@@ -34,8 +34,6 @@ const KNOWN_SUITE_PACKAGES = new Set([
   'signalk-ajrm-marine-instruments',
   'signalk-ajrm-marine-notifications',
   'signalk-ajrm-marine-pi-controller',
-  'signalk-self-track-simulator',
-  'signalk-vessel-simulator',
   'signalk-ajrm-marine-capture',
   'signalk-ajrm-marine-voyage-viewer',
   'signalk-ajrm-marine-alerts',

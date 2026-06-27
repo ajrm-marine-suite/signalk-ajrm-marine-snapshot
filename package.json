@@ -1,6 +1,6 @@
 {
   "name": "signalk-ajrm-marine-snapshot",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "description": "Diagnostic snapshot collector for AJRM Marine Suite support.",
   "main": "plugin/index.js",
   "scripts": {
