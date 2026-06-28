@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.7
+
+- Align OpenAPI metadata and install documentation with the package version.
+
 ## 0.5.6
 
 - Add Signal K AppStore utility category metadata and packaged app icon.

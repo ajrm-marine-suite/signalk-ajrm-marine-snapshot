@@ -128,7 +128,7 @@ cd ~/.signalk
 2. Install the public GitHub repo as a Signal K dependency:
 
 ```sh
-npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.5.6 --omit=dev --no-package-lock
+npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.5.7 --omit=dev --no-package-lock
 ```
 
 3. Restart Signal K:
@@ -149,7 +149,7 @@ Reinstall it from `~/.signalk` so npm records it again:
 
 ```sh
 cd ~/.signalk
-npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.5.6 --omit=dev --no-package-lock
+npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.5.7 --omit=dev --no-package-lock
 sudo systemctl restart signalk
 ```
 
@@ -163,7 +163,7 @@ ssh -T git@github.com
 
 ```sh
 cd ~/.signalk
-npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.5.6 --omit=dev --no-package-lock
+npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.5.7 --omit=dev --no-package-lock
 sudo systemctl restart signalk
 ```
 
