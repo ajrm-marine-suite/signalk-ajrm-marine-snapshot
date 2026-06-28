@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.6
+
+- Add Signal K AppStore utility category metadata and packaged app icon.
+
 ## 0.5.5
 
 - Rename snapshot telemetry descriptions to current AJRM Marine app names.

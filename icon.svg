@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-labelledby="title desc">
+  <title id="title">AJRM Marine Snapshot</title>
+  <desc id="desc">A camera aperture and data points for marine diagnostics snapshots.</desc>
+  <defs>
+    <linearGradient id="bg" x1="18" y1="12" x2="102" y2="108" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0f766e"/>
+      <stop offset="1" stop-color="#1e3a8a"/>
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" rx="22" fill="url(#bg)"/>
+  <path fill="#f8fafc" d="M35 31h50a12 12 0 0 1 12 12v38a12 12 0 0 1-12 12H35a12 12 0 0 1-12-12V43a12 12 0 0 1 12-12Zm5 10a7 7 0 0 0-7 7v28a7 7 0 0 0 7 7h40a7 7 0 0 0 7-7V48a7 7 0 0 0-7-7H40Z"/>
+  <circle cx="60" cy="62" r="20" fill="#0f172a"/>
+  <path fill="#38bdf8" d="M60 43a19 19 0 0 1 16 8l-21 4 5-12Zm18 13a19 19 0 0 1-2 18L65 56h13ZM71 78a19 19 0 0 1-18 2l14-15 4 13ZM46 76a19 19 0 0 1-4-17l16 10-12 7Zm-3-23a19 19 0 0 1 14-10l-5 18-9-8Z"/>
+  <circle cx="60" cy="62" r="7" fill="#f8fafc"/>
+  <circle cx="37" cy="49" r="4" fill="#f59e0b"/>
+  <circle cx="84" cy="78" r="4" fill="#22c55e"/>
+</svg>

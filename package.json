@@ -1,6 +1,6 @@
 {
   "name": "signalk-ajrm-marine-snapshot",
-  "version": "0.5.5",
+  "version": "0.5.6",
   "description": "Diagnostic snapshot collector for AJRM Marine Suite support.",
   "main": "plugin/index.js",
   "scripts": {
@@ -9,6 +9,7 @@
   "keywords": [
     "signalk-node-server-plugin",
     "signalk-webapp",
+    "signalk-category-utility",
     "signalk-category-navigation",
     "ais",
     "collision-avoidance",
@@ -40,10 +41,12 @@
     "public",
     "openApi.json",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "icon.svg"
   ],
   "signalk-plugin-enabled-by-default": false,
   "signalk": {
-    "displayName": "AJRM Marine Snapshot"
+    "displayName": "AJRM Marine Snapshot",
+    "appIcon": "./icon.svg"
   }
 }
