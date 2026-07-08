@@ -481,8 +481,7 @@ function buildTargetSnapshot(target, selfPosition, selfHeading, options, now) {
   if (ca.cpaReference) output.cpaReference = ca.cpaReference;
   if (ca.tcpaMin !== null) output.tcpaMin = round(ca.tcpaMin, 0);
 
-  const status = ca.status || inferStatus(output.cpaNm, output.tcpaMin);
-  if (status) output.status = status;
+  if (ca.status) output.status = ca.status;
   if (ca.passType) output.passType = ca.passType;
   if (ca.summary) output.summary = ca.summary;
 
@@ -903,14 +902,6 @@ function readBearingTrue(raw, fields, maxAge, now) {
   return readAngleDegrees(latestValue(fields.bearingRad, maxAge, now), true);
 }
 
-function inferStatus(cpaNm, tcpaMin) {
-  if (typeof cpaNm !== 'number' || typeof tcpaMin !== 'number' || tcpaMin < 0) return '';
-  if (cpaNm <= 0.5 && tcpaMin <= 30) return 'alarm';
-  if (cpaNm <= 1 && tcpaMin <= 45) return 'warning';
-  if (cpaNm <= 2 && tcpaMin <= 60) return 'alert';
-  return 'normal';
-}
-
 function isRiskyTarget(target) {
   return statusRank(target.status) > 0 || target.status === 'alert';
 }
@@ -1118,7 +1109,7 @@ function clockNumber(bearingTrue, ownHeading) {
 function readAngleDegrees(value, normalize) {
   const number = readNumber(value);
   if (number === null) return null;
-  const degrees = Math.abs(number) <= Math.PI * 2 + 0.000001 ? number * RAD_TO_DEG : number;
+  const degrees = number * RAD_TO_DEG;
   return normalize ? normalizeDegrees(degrees) : normalizeSignedDegrees(degrees);
 }
 

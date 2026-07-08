@@ -594,6 +594,53 @@ test('request-time seeding refreshes self data without making old targets fresh'
   assert.equal(snapshot.aisTargets, undefined);
 });
 
+test('uses Signal K radians for angle paths without magnitude guessing', () => {
+  const state = createSnapshotState();
+  const now = new Date('2026-04-27T14:30:00Z');
+
+  applyDelta(state, {
+    context: 'vessels.self',
+    updates: [
+      {
+        timestamp: now.toISOString(),
+        values: [
+          { path: 'navigation.courseOverGroundTrue', value: 90 },
+          { path: 'navigation.headingTrue', value: 90 },
+          { path: 'environment.wind.angleTrueWater', value: 90 }
+        ]
+      }
+    ]
+  }, now);
+
+  const snapshot = buildSnapshot(state, {}, now);
+  assert.equal(snapshot.self.cog, 117);
+  assert.equal(snapshot.self.heading, 117);
+  assert.equal(snapshot.self.wind.angleTrue, 117);
+});
+
+test('does not infer target alert status from CPA and TCPA numbers', () => {
+  const state = createSnapshotState();
+  const now = new Date('2026-04-27T14:30:00Z');
+
+  applyDelta(state, {
+    context: 'vessels.urn:mrn:imo:mmsi:235008635',
+    updates: [
+      {
+        timestamp: now.toISOString(),
+        values: [
+          { path: 'mmsi', value: '235008635' },
+          { path: 'navigation.closestApproach', value: { distance: 100, timeTo: 300 } }
+        ]
+      }
+    ]
+  }, now);
+
+  assert.equal(buildSnapshot(state, {}, now).aisTargets, undefined);
+  const snapshot = buildSnapshot(state, { includeAllTargets: true }, now);
+  assert.equal(snapshot.aisTargets[0].mmsi, '235008635');
+  assert.equal(snapshot.aisTargets[0].status, undefined);
+});
+
 test('local request detection accepts loopback and rejects private lan addresses', () => {
   assert.equal(isLocalRequest({ ip: '::1' }), true);
   assert.equal(isLocalRequest({ ip: '::ffff:127.0.0.1' }), true);

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.9
+
+- Stop inferring AIS target alert status from CPA/TCPA numbers in compact
+  snapshots; status now comes only from explicit notification/state fields.
+- Treat standard Signal K navigation and wind angle paths as radians instead
+  of guessing radians versus degrees from numeric magnitude.
+
+## 0.5.8
+
+- Internal support snapshot maintenance release.
+
 ## 0.5.7
 
 - Align OpenAPI metadata and install documentation with the package version.
