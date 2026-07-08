@@ -73,6 +73,7 @@ test('builds compact self, AIS, collision, notification, and electrical snapshot
             }
           },
           { path: 'navigation.closestApproach.enriched.clockLabel', value: '2 o clock' },
+          { path: 'navigation.closestApproach.enriched.cpaRelativeBearing', value: Math.PI / 3 },
           { path: 'navigation.closestApproach.enriched.passTypeLabel', value: 'crossing-starboard' },
           { path: 'navigation.closestApproach.enriched.spokenSummary', value: 'Warning. INGRID KNUTSEN at 2 o clock. CPA 0.8 miles in 28 minutes.' }
         ]
@@ -639,6 +640,28 @@ test('does not infer target alert status from CPA and TCPA numbers', () => {
   const snapshot = buildSnapshot(state, { includeAllTargets: true }, now);
   assert.equal(snapshot.aisTargets[0].mmsi, '235008635');
   assert.equal(snapshot.aisTargets[0].status, undefined);
+});
+
+test('does not infer relative clock from closest-approach label text', () => {
+  const state = createSnapshotState();
+  const now = new Date('2026-04-27T14:30:00Z');
+
+  applyDelta(state, {
+    context: 'vessels.urn:mrn:imo:mmsi:235008635',
+    updates: [
+      {
+        timestamp: now.toISOString(),
+        values: [
+          { path: 'mmsi', value: '235008635' },
+          { path: 'navigation.closestApproach', value: { collisionAlarmState: 'warning' } },
+          { path: 'navigation.closestApproach.enriched.clockLabel', value: '2 o clock' }
+        ]
+      }
+    ]
+  }, now);
+
+  const snapshot = buildSnapshot(state, { includeAllTargets: true }, now);
+  assert.equal(snapshot.aisTargets[0].relativeClock, undefined);
 });
 
 test('local request detection accepts loopback and rejects private lan addresses', () => {

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.10
+
+- Use explicit closest-approach relative bearing to produce snapshot clock
+  position, and stop parsing clock labels from text.
+
 ## 0.5.9
 
 - Stop inferring AIS target alert status from CPA/TCPA numbers in compact

@@ -768,6 +768,7 @@ function readClosestApproach(target, maxAge, now) {
   const gpsCpaMeters = readGpsDistanceMeters(rawObject, fields, maxAge, now);
   const tcpaMin = readTcpaMin(rawObject, fields, maxAge, now);
   const bearingTrue = readBearingTrue(rawObject, fields, maxAge, now);
+  const cpaRelativeBearing = readAngleDegrees(latestValue(enriched.cpaRelativeBearing, maxAge, now), true);
   const explicitStatus = normalizedStatus(
     firstPresent(
       latestValue(enriched.alarmState, maxAge, now),
@@ -786,7 +787,7 @@ function readClosestApproach(target, maxAge, now) {
     cpaReference: stringValue(firstPresent(rawObject.cpaReference, latestValue(fields.cpaReference, maxAge, now))),
     tcpaMin,
     bearingTrue,
-    relativeClock: clockFromLabel(latestValue(enriched.clockLabel, maxAge, now)),
+    relativeClock: clockFromRelativeBearing(cpaRelativeBearing),
     status: explicitStatus,
     passType: stringValue(latestValue(enriched.passTypeLabel, maxAge, now)),
     summary: stringValue(latestValue(enriched.spokenSummary, maxAge, now)),
@@ -1090,18 +1091,15 @@ function statusRank(value) {
   }
 }
 
-function clockFromLabel(label) {
-  const match = stringValue(label).match(/(\d{1,2})\s*o\s*'?clock/i);
-  if (!match) return null;
-  const value = Number(match[1]);
-  if (!Number.isFinite(value)) return null;
-  if (value === 0) return 12;
-  return Math.min(12, Math.max(1, Math.round(value)));
-}
-
 function clockNumber(bearingTrue, ownHeading) {
   if (typeof bearingTrue !== 'number' || typeof ownHeading !== 'number') return null;
   const relative = normalizeDegrees(bearingTrue - ownHeading);
+  return clockFromRelativeBearing(relative);
+}
+
+function clockFromRelativeBearing(relativeBearingDegrees) {
+  if (typeof relativeBearingDegrees !== 'number') return null;
+  const relative = normalizeDegrees(relativeBearingDegrees);
   const clock = Math.round(relative / 30);
   return clock === 0 ? 12 : clock;
 }
