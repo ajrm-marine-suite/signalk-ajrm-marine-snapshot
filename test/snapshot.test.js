@@ -7,6 +7,7 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 
+const packageInfo = require('../package.json');
 const startPlugin = require('../plugin');
 const {
   applyDelta,
@@ -525,7 +526,7 @@ test('in-process snapshot API reports browser access readiness', async () => {
 
   assert.equal(status.ok, true);
   assert.equal(status.pluginId, 'signalk-ajrm-marine-snapshot');
-  assert.equal(status.version, '0.5.11');
+  assert.equal(status.version, packageInfo.version);
   assert.equal(status.allowRemoteAccess, true);
   assert.equal(status.snapshotPath, '/plugins/signalk-ajrm-marine-snapshot/snapshot');
   assert.equal(status.settingsPath, '/plugins/signalk-ajrm-marine-snapshot/settings');
