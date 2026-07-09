@@ -516,6 +516,21 @@ test('in-process snapshot API includes long voyage diagnostics', async () => {
   }
 });
 
+test('in-process snapshot API reports browser access readiness', async () => {
+  const app = fakeAppWithConfig({}, await fs.mkdtemp(path.join(os.tmpdir(), 'ai-snapshot-status-')));
+  const plugin = startPlugin(app);
+  plugin.start({ allowRemoteAccess: true });
+
+  const status = app.ajrmMarineSnapshotApi.status();
+
+  assert.equal(status.ok, true);
+  assert.equal(status.pluginId, 'signalk-ajrm-marine-snapshot');
+  assert.equal(status.version, '0.5.11');
+  assert.equal(status.allowRemoteAccess, true);
+  assert.equal(status.snapshotPath, '/plugins/signalk-ajrm-marine-snapshot/snapshot');
+  assert.equal(status.settingsPath, '/plugins/signalk-ajrm-marine-snapshot/settings');
+});
+
 test('filters own vessel from AIS targets when self MMSI is known', () => {
   const state = createSnapshotState();
   const now = new Date('2026-04-27T14:30:00Z');

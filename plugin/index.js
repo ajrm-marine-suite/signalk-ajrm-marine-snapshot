@@ -7,6 +7,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 const openApi = require('../openApi.json');
+const packageInfo = require('../package.json');
 const {
   DEFAULT_OPTIONS,
   applyDelta,
@@ -188,7 +189,8 @@ module.exports = function startPlugin(app) {
     }
 
     const api = {
-      snapshot: buildInProcessSnapshot
+      snapshot: buildInProcessSnapshot,
+      status: snapshotStatus
     };
     app.ajrmMarineSnapshotApi = api;
     globalThis[AJRM_MARINE_SNAPSHOT_API_REGISTRY] = api;
@@ -359,6 +361,17 @@ module.exports = function startPlugin(app) {
       if (installedApps) snapshot.installedApps = installedApps;
     }
     return snapshot;
+  }
+
+  function snapshotStatus() {
+    return {
+      ok: true,
+      pluginId: plugin.id,
+      version: packageInfo.version,
+      allowRemoteAccess: currentOptions.allowRemoteAccess === true,
+      snapshotPath: `/plugins/${plugin.id}/snapshot`,
+      settingsPath: `/plugins/${plugin.id}/settings`
+    };
   }
 
   function canServe(req) {

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.11
+
+- Expose Snapshot browser-access readiness through the in-process API so
+  Console BITE can detect when remote/browser support snapshots are disabled.
+
 ## 0.5.10
 
 - Use explicit closest-approach relative bearing to produce snapshot clock
