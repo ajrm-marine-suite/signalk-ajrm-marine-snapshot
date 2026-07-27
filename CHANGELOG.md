@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.6.1
+
+- Capture AJRM Marine Navigation Reference's selected position, ground vector,
+  heading kind, source, age, uncertainty, GPS-dependence, magnetic model,
+  leeway, current, and residual provenance.
+- Treat a recorded Navigation Reference path as authoritative, withholding raw
+  navigation when the projection is stale, malformed, or uses an unsupported
+  schema; raw fallback remains available only when the provider path is absent.
+- Preserve missing GPS-dependence evidence as unknown instead of labelling it
+  independent.
+
 ## 0.5.11
 
 - Expose Snapshot browser-access readiness through the in-process API so

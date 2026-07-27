@@ -109,6 +109,323 @@ test('builds compact self, AIS, collision, notification, and electrical snapshot
   assert.equal(snapshot.notifications[0].level, 'warning');
 });
 
+test('uses Navigation Reference provenance and never labels raw magnetic heading as true', () => {
+  const state = createSnapshotState();
+  const now = new Date('2026-07-16T09:04:25Z');
+
+  applyDelta(state, {
+    context: 'vessels.self',
+    updates: [
+      {
+        timestamp: now.toISOString(),
+        values: [
+          { path: 'navigation.headingMagnetic', value: 100 * Math.PI / 180 },
+          { path: 'navigation.headingTrue', value: 40 * Math.PI / 180 },
+          {
+            path: 'plugins.ajrmMarineNavigationReference.state',
+            value: {
+              contract: 'ajrm-marine-navigation-reference',
+              schemaVersion: 1,
+              status: 'heading',
+              position: {
+                value: { latitude: 55.8872512, longitude: -5.724038 }
+              },
+              groundTrack: {
+                courseTrue: { value: 80 * Math.PI / 180 },
+                speedOverGround: { value: 2.5 }
+              },
+              bowHeadingTrue: {
+                value: 98.63 * Math.PI / 180,
+                source: 'YDEN.4',
+                method: 'magnetic-heading-plus-wmm'
+              },
+              clockReference: {
+                value: 98.63 * Math.PI / 180,
+                kind: 'heading',
+                source: 'YDEN.4',
+                method: 'magnetic-heading-plus-wmm',
+                ageMs: 120,
+                uncertaintyRad: 5.03 * Math.PI / 180,
+                gpsDependent: false
+              },
+              magneticVariation: {
+                value: -1.37 * Math.PI / 180
+              },
+              throughWater: { leewayStatus: 'unknown' },
+              residual: {
+                origin: 'ground-minus-water-residual',
+                gpsDependent: true
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }, now);
+
+  const snapshot = buildSnapshot(state, {}, now);
+
+  assert.equal(snapshot.self.heading, 99);
+  assert.equal(snapshot.self.cog, 80);
+  assert.equal(snapshot.self.sog, 4.9);
+  assert.deepEqual(snapshot.self.position, {
+    latitude: 55.887251,
+    longitude: -5.724038
+  });
+  assert.deepEqual(snapshot.self.clockReference, {
+    degreesTrue: 99,
+    kind: 'heading',
+    source: 'YDEN.4',
+    method: 'magnetic-heading-plus-wmm',
+    ageMs: 120,
+    uncertaintyDegrees: 5,
+    gpsDependent: false
+  });
+  assert.deepEqual(snapshot.self.navigationReference, {
+    contract: 'ajrm-marine-navigation-reference',
+    schemaVersion: 1,
+    status: 'heading',
+    leewayStatus: 'unknown',
+    residualOrigin: 'ground-minus-water-residual',
+    magneticVariationDegrees: -1.37,
+    residualGpsDependent: true
+  });
+});
+
+test('does not fall back to raw heading when Navigation Reference is present but has no clock reference', () => {
+  const state = createSnapshotState();
+  const now = new Date('2026-07-16T09:04:25Z');
+
+  applyDelta(state, {
+    context: 'vessels.self',
+    updates: [{
+      timestamp: now.toISOString(),
+      values: [
+        { path: 'navigation.headingTrue', value: 40 * Math.PI / 180 },
+        { path: 'navigation.courseOverGroundTrue', value: 40 * Math.PI / 180 },
+        {
+          path: 'plugins.ajrmMarineNavigationReference.state',
+          value: {
+            contract: 'ajrm-marine-navigation-reference',
+            schemaVersion: 1,
+            status: 'unavailable',
+            position: {
+              value: { latitude: 55.8872512, longitude: -5.724038 }
+            },
+            groundTrack: {
+              courseTrue: { value: 80 * Math.PI / 180 },
+              speedOverGround: { value: 0.1 }
+            },
+            bowHeadingTrue: null,
+            clockReference: null,
+            throughWater: { leewayStatus: 'unknown' }
+          }
+        }
+      ]
+    }]
+  }, now);
+  applyDelta(state, {
+    context: 'vessels.urn:mrn:imo:mmsi:235008635',
+    updates: [{
+      timestamp: now.toISOString(),
+      values: [
+        { path: 'mmsi', value: '235008635' },
+        {
+          path: 'navigation.position',
+          value: { latitude: 55.8972512, longitude: -5.724038 }
+        }
+      ]
+    }]
+  }, now);
+
+  const snapshot = buildSnapshot(
+    state,
+    { includeAllTargets: true },
+    now
+  );
+
+  assert.equal(snapshot.self.cog, 80);
+  assert.equal(Object.hasOwn(snapshot.self, 'heading'), false);
+  assert.equal(
+    Object.hasOwn(snapshot.aisTargets[0], 'relativeClock'),
+    false
+  );
+});
+
+test('withholds raw navigation when Navigation Reference has a wrong or unsupported contract', () => {
+  const now = new Date('2026-07-16T09:04:25Z');
+  const invalidReferences = [
+    {
+      contract: 'unexpected-provider',
+      schemaVersion: 1
+    },
+    {
+      contract: 'ajrm-marine-navigation-reference',
+      schemaVersion: 2
+    }
+  ];
+
+  for (const invalidReference of invalidReferences) {
+    const state = createSnapshotState();
+    applyDelta(state, {
+      context: 'vessels.self',
+      updates: [{
+        timestamp: now.toISOString(),
+        values: [
+          {
+            path: 'navigation.position',
+            value: { latitude: 55.8872512, longitude: -5.724038 }
+          },
+          { path: 'navigation.speedOverGround', value: 2.5 },
+          {
+            path: 'navigation.courseOverGroundTrue',
+            value: 80 * Math.PI / 180
+          },
+          { path: 'navigation.headingTrue', value: 40 * Math.PI / 180 },
+          {
+            path: 'plugins.ajrmMarineNavigationReference.state',
+            value: invalidReference
+          }
+        ]
+      }]
+    }, now);
+    applyDelta(state, {
+      context: 'vessels.urn:mrn:imo:mmsi:235008635',
+      updates: [{
+        timestamp: now.toISOString(),
+        values: [
+          { path: 'mmsi', value: '235008635' },
+          {
+            path: 'navigation.position',
+            value: { latitude: 55.8972512, longitude: -5.724038 }
+          }
+        ]
+      }]
+    }, now);
+
+    const snapshot = buildSnapshot(
+      state,
+      { includeAllTargets: true },
+      now
+    );
+
+    assert.equal(Object.hasOwn(snapshot.self, 'position'), false);
+    assert.equal(Object.hasOwn(snapshot.self, 'sog'), false);
+    assert.equal(Object.hasOwn(snapshot.self, 'cog'), false);
+    assert.equal(Object.hasOwn(snapshot.self, 'heading'), false);
+    assert.equal(Object.hasOwn(snapshot.self, 'clockReference'), false);
+    assert.equal(
+      Object.hasOwn(snapshot.aisTargets[0], 'relativeClock'),
+      false
+    );
+  }
+});
+
+test('withholds raw navigation while a recorded Navigation Reference state is stale', () => {
+  const state = createSnapshotState();
+  const now = new Date('2026-07-16T09:10:00Z');
+  const stale = new Date('2026-07-16T09:00:00Z');
+
+  applyDelta(state, {
+    context: 'vessels.self',
+    updates: [{
+      timestamp: stale.toISOString(),
+      values: [{
+        path: 'plugins.ajrmMarineNavigationReference.state',
+        value: {
+          contract: 'ajrm-marine-navigation-reference',
+          schemaVersion: 1,
+          status: 'heading'
+        }
+      }]
+    }]
+  }, stale);
+  applyDelta(state, {
+    context: 'vessels.self',
+    updates: [{
+      timestamp: now.toISOString(),
+      values: [
+        {
+          path: 'navigation.position',
+          value: { latitude: 55.8872512, longitude: -5.724038 }
+        },
+        { path: 'navigation.speedOverGround', value: 2.5 },
+        {
+          path: 'navigation.courseOverGroundTrue',
+          value: 80 * Math.PI / 180
+        },
+        { path: 'navigation.headingTrue', value: 40 * Math.PI / 180 }
+      ]
+    }]
+  }, now);
+
+  const snapshot = buildSnapshot(state, {}, now);
+
+  assert.equal(Object.hasOwn(snapshot.self, 'position'), false);
+  assert.equal(Object.hasOwn(snapshot.self, 'sog'), false);
+  assert.equal(Object.hasOwn(snapshot.self, 'cog'), false);
+  assert.equal(Object.hasOwn(snapshot.self, 'heading'), false);
+});
+
+test('does not infer GPS independence from missing provider provenance', () => {
+  const state = createSnapshotState();
+  const now = new Date('2026-07-16T09:04:25Z');
+
+  applyDelta(state, {
+    context: 'vessels.self',
+    updates: [{
+      timestamp: now.toISOString(),
+      values: [{
+        path: 'plugins.ajrmMarineNavigationReference.state',
+        value: {
+          contract: 'ajrm-marine-navigation-reference',
+          schemaVersion: 1,
+          status: 'heading',
+          clockReference: {
+            value: 0,
+            kind: 'heading',
+            source: 'incomplete.test',
+            method: 'direct-true-heading'
+          },
+          residual: {
+            origin: 'ground-minus-water-residual'
+          }
+        }
+      }]
+    }]
+  }, now);
+
+  const snapshot = buildSnapshot(state, {}, now);
+
+  assert.equal(snapshot.self.clockReference.degreesTrue, 0);
+  assert.equal(
+    Object.hasOwn(snapshot.self.clockReference, 'gpsDependent'),
+    false
+  );
+  assert.equal(
+    Object.hasOwn(snapshot.self.navigationReference, 'residualGpsDependent'),
+    false
+  );
+});
+
+test('omits heading when only an unconverted magnetic heading is available', () => {
+  const state = createSnapshotState();
+  const now = new Date('2026-07-16T09:04:25Z');
+
+  applyDelta(state, {
+    context: 'vessels.self',
+    updates: [{
+      timestamp: now.toISOString(),
+      values: [
+        { path: 'navigation.headingMagnetic', value: 100 * Math.PI / 180 }
+      ]
+    }]
+  }, now);
+
+  const snapshot = buildSnapshot(state, {}, now);
+  assert.equal(Object.hasOwn(snapshot.self, 'heading'), false);
+});
+
 test('omits stale targets and normal notifications', () => {
   const state = createSnapshotState();
   const old = new Date('2026-04-27T14:20:00Z');

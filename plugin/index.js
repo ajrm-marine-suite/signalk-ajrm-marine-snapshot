@@ -31,6 +31,7 @@ const KNOWN_SUITE_PACKAGES = new Set([
   'signalk-ajrm-marine-logger',
   'signalk-ajrm-marine-dr-plotter',
   'signalk-ajrm-marine-gps-integrity',
+  'signalk-ajrm-marine-navigation-reference',
   'signalk-ajrm-marine-harbour-editor',
   'signalk-ajrm-marine-instruments',
   'signalk-ajrm-marine-notifications',
@@ -1151,7 +1152,8 @@ module.exports = function startPlugin(app) {
       ajrmMarineDisplay: 'plugins.ajrmMarineDisplay',
       ajrmMarineAudio: 'plugins.ajrmMarineAudio',
       ajrmMarineConsole: 'plugins.ajrmMarineConsole',
-      ajrmMarineGpsIntegrity: 'plugins.ajrmMarineGpsIntegrity'
+      ajrmMarineGpsIntegrity: 'plugins.ajrmMarineGpsIntegrity',
+      ajrmMarineNavigationReference: 'plugins.ajrmMarineNavigationReference'
     };
     const output = {};
     Object.keys(paths).forEach(key => {

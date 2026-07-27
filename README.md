@@ -14,7 +14,8 @@ investigation.
 
 ## What It Captures
 
-- Own-vessel position, SOG, COG, heading, depth, and wind
+- Own-vessel position, SOG, COG, true bow heading, clock-reference kind, and
+  navigation provenance, plus depth and wind
 - Battery voltage/current/state of charge when available
 - AIS target identity, range, bearing, motion, AIS GPS antenna offsets, CPA/TCPA, CPA reference, and risk status
 - Enriched encounter fields from AJRM Marine
@@ -22,9 +23,20 @@ investigation.
 - AJRM Marine harbour region bounds only when the separate harbour-list option is enabled
 - AJRM Marine Audio render, queue, local playback, radio stream, volume, ping, voice, and recent event status when AJRM Marine Audio is installed
 - Installed Signal K plugin/webapp package names, display names, versions, and Git/npm source specs
-- Long-voyage diagnostics from AJRM Marine Traffic, Capture, Logger, DR Plotter, GPS Integrity, Simulator, Notifications, and compact Signal K chart resources
+- Long-voyage diagnostics from AJRM Marine Traffic, Navigation Reference,
+  Capture, Logger, DR Plotter, GPS Integrity, Simulator, Notifications, and
+  compact Signal K chart resources
 - Active `vessels.self.notifications.*` messages
 - Legacy Announce AIS Messages live/spoken output when enabled
+
+Snapshot never treats raw `navigation.headingMagnetic` as true heading. When
+AJRM Marine Navigation Reference is present it records the selected compass or
+moving-COG proxy, source, method, age, uncertainty, WMM variation, leeway
+status, and whether a residual is GPS-dependent.
+If the provider path exists but is stale, malformed, or uses an unsupported
+schema, Snapshot withholds provider-owned position and motion fields instead of
+silently repairing them from unrelated raw paths. Raw fallback is used only
+when the provider path is absent.
 
 The plugin understands the enriched AIS hand-off paths:
 
@@ -128,7 +140,7 @@ cd ~/.signalk
 2. Install the public GitHub repo as a Signal K dependency:
 
 ```sh
-npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.5.8 --omit=dev --no-package-lock
+npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.6.1 --omit=dev --no-package-lock
 ```
 
 3. Restart Signal K:
@@ -149,7 +161,7 @@ Reinstall it from `~/.signalk` so npm records it again:
 
 ```sh
 cd ~/.signalk
-npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.5.8 --omit=dev --no-package-lock
+npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.6.1 --omit=dev --no-package-lock
 sudo systemctl restart signalk
 ```
 
@@ -163,7 +175,7 @@ ssh -T git@github.com
 
 ```sh
 cd ~/.signalk
-npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.5.8 --omit=dev --no-package-lock
+npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.6.1 --omit=dev --no-package-lock
 sudo systemctl restart signalk
 ```
 

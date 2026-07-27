@@ -249,6 +249,7 @@ function seedFromApp(app, state, now, seedOptions) {
     'navigation.courseOverGroundMagnetic',
     'navigation.headingTrue',
     'navigation.headingMagnetic',
+    'plugins.ajrmMarineNavigationReference.state',
     'environment.depth.belowKeel',
     'environment.depth.belowTransducer',
     'environment.depth.belowSurface',
@@ -328,6 +329,12 @@ function buildSelfSnapshot(state, options, now) {
   const maxAge = options.maxSelfValueAgeSeconds;
   const fields = state.self.fields;
   const self = {};
+  const navigationReferenceSelection = selectNavigationReference(
+    fields.navigationReference,
+    maxAge,
+    now
+  );
+  const navigationReference = navigationReferenceSelection.value;
 
   const name = stringValue(latestValueNoAge(fields.name));
   const mmsi = stringValue(latestValueNoAge(fields.mmsi));
@@ -336,7 +343,9 @@ function buildSelfSnapshot(state, options, now) {
   if (mmsi) self.mmsi = mmsi;
   if (callsign) self.callsign = callsign;
 
-  const position = latestValue(fields.position, maxAge, now);
+  const position = navigationReferenceSelection.present
+    ? navigationReference?.position?.value
+    : latestValue(fields.position, maxAge, now);
   if (isPosition(position)) {
     self.position = {
       latitude: round(position.latitude, 6),
@@ -344,17 +353,72 @@ function buildSelfSnapshot(state, options, now) {
     };
   }
 
-  const sog = readNumber(latestValue(fields.sog, maxAge, now));
+  const sog = readNumber(
+    navigationReferenceSelection.present
+      ? navigationReference?.groundTrack?.speedOverGround?.value
+      : latestValue(fields.sog, maxAge, now)
+  );
   if (sog !== null) self.sog = round(sog * MPS_TO_KNOTS, 1);
 
-  const cog = readAngleDegrees(latestValue(fields.cogTrue, maxAge, now), true);
+  const cog = readAngleDegrees(
+    navigationReferenceSelection.present
+      ? navigationReference?.groundTrack?.courseTrue?.value
+      : latestValue(fields.cogTrue, maxAge, now),
+    true
+  );
   if (cog !== null) self.cog = round(cog, 0);
 
   const heading = readAngleDegrees(
-    latestValue(fields.headingTrue, maxAge, now),
+    navigationReferenceSelection.present
+      ? navigationReference?.bowHeadingTrue?.value
+      : latestValue(fields.headingTrue, maxAge, now),
     true
-  ) ?? readAngleDegrees(latestValue(fields.headingMagnetic, maxAge, now), true);
+  );
   if (heading !== null) self.heading = round(heading, 0);
+  const clockReference = navigationReference?.clockReference;
+  const clockReferenceDegrees = readAngleDegrees(clockReference?.value, true);
+  if (clockReferenceDegrees !== null) {
+    self.clockReference = {
+      degreesTrue: round(clockReferenceDegrees, 0),
+      kind: clockReference.kind
+    };
+    if (typeof clockReference.gpsDependent === 'boolean') {
+      self.clockReference.gpsDependent = clockReference.gpsDependent;
+    }
+    const referenceSource = stringValue(clockReference.source);
+    const referenceMethod = stringValue(clockReference.method);
+    const referenceAgeMs = readNumber(clockReference.ageMs);
+    const referenceUncertainty = radiansToDegrees(clockReference.uncertaintyRad);
+    if (referenceSource) self.clockReference.source = referenceSource;
+    if (referenceMethod) self.clockReference.method = referenceMethod;
+    if (referenceAgeMs !== null) self.clockReference.ageMs = referenceAgeMs;
+    if (referenceUncertainty !== null) {
+      self.clockReference.uncertaintyDegrees = round(referenceUncertainty, 1);
+    }
+  }
+  if (navigationReference) {
+    self.navigationReference = {
+      contract: navigationReference.contract,
+      schemaVersion: navigationReference.schemaVersion,
+      status: navigationReference.status,
+      leewayStatus: navigationReference.throughWater?.leewayStatus || null,
+      residualOrigin: navigationReference.residual?.origin || null
+    };
+    const variationDegrees = radiansToDegrees(
+      navigationReference.magneticVariation?.value
+    );
+    if (variationDegrees !== null) {
+      self.navigationReference.magneticVariationDegrees =
+        round(variationDegrees, 2);
+    }
+    if (
+      navigationReference.residual &&
+      typeof navigationReference.residual.gpsDependent === 'boolean'
+    ) {
+      self.navigationReference.residualGpsDependent =
+        navigationReference.residual.gpsDependent;
+    }
+  }
 
   const depth = readPreferredDepth(state.self.depths, maxAge, now);
   if (depth) {
@@ -410,12 +474,33 @@ function buildElectricalSnapshot(electricalState, maxAge, now) {
 }
 
 function buildTargetSnapshots(state, options, now) {
-  const selfPosition = latestValue(state.self.fields.position, options.maxSelfValueAgeSeconds, now);
+  const navigationReferenceSelection = selectNavigationReference(
+    state.self.fields.navigationReference,
+    options.maxSelfValueAgeSeconds,
+    now
+  );
+  const navigationReference = navigationReferenceSelection.value;
+  const selfPosition = navigationReferenceSelection.present
+    ? navigationReference?.position?.value
+    : latestValue(state.self.fields.position, options.maxSelfValueAgeSeconds, now);
   const ownMmsi = stringValue(latestValueNoAge(state.self.fields.mmsi));
-  const selfHeading = readAngleDegrees(
-    latestValue(state.self.fields.headingTrue, options.maxSelfValueAgeSeconds, now),
-    true
-  ) ?? readAngleDegrees(latestValue(state.self.fields.cogTrue, options.maxSelfValueAgeSeconds, now), true);
+  const selfHeading = navigationReferenceSelection.present
+    ? readAngleDegrees(navigationReference?.clockReference?.value, true)
+    : readAngleDegrees(
+        latestValue(
+          state.self.fields.headingTrue,
+          options.maxSelfValueAgeSeconds,
+          now
+        ),
+        true
+      ) ?? readAngleDegrees(
+        latestValue(
+          state.self.fields.cogTrue,
+          options.maxSelfValueAgeSeconds,
+          now
+        ),
+        true
+      );
 
   const output = [];
   state.targets.forEach(target => {
@@ -559,6 +644,9 @@ function applySelfValue(state, path, value, timestamp) {
       return;
     case 'navigation.headingMagnetic':
       setLatest(fields, 'headingMagnetic', value, timestamp, path);
+      return;
+    case 'plugins.ajrmMarineNavigationReference.state':
+      setLatest(fields, 'navigationReference', value, timestamp, path);
       return;
     default:
       break;
@@ -1191,6 +1279,30 @@ function readNumber(value) {
     return Number.isFinite(number) ? number : null;
   }
   return null;
+}
+
+function radiansToDegrees(value) {
+  const number = readNumber(value);
+  return number === null ? null : number * RAD_TO_DEG;
+}
+
+function validNavigationReference(value) {
+  if (
+    !isObject(value) ||
+    value.contract !== 'ajrm-marine-navigation-reference' ||
+    value.schemaVersion !== 1
+  ) {
+    return null;
+  }
+  return value;
+}
+
+function selectNavigationReference(record, maxAgeSeconds, now) {
+  if (!record) return { present: false, value: null };
+  return {
+    present: true,
+    value: validNavigationReference(latestValue(record, maxAgeSeconds, now))
+  };
 }
 
 function isPosition(value) {
