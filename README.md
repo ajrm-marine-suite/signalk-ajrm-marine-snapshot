@@ -24,7 +24,7 @@ investigation.
 - AJRM Marine Audio render, queue, local playback, radio stream, volume, ping, voice, and recent event status when AJRM Marine Audio is installed
 - Installed Signal K plugin/webapp package names, display names, versions, and Git/npm source specs
 - Long-voyage diagnostics from AJRM Marine Traffic, Navigation Reference,
-  Capture, Logger, DR Plotter, GPS Integrity, Simulator, Notifications, and
+  Capture, DR Plotter, GPS Integrity, Simulator, Notifications, and
   compact Signal K chart resources
 - Active `vessels.self.notifications.*` messages
 - Legacy Announce AIS Messages live/spoken output when enabled
@@ -57,7 +57,8 @@ from:
 - `/plugins/signalk-ajrm-marine-audio/status`
 - `/plugins/signalk-ajrm-marine-traffic/status`
 - `/plugins/signalk-ajrm-marine-capture/status`
-- `/signalk/v1/api/ajrmMarineLogger/status`
+- the retired `/signalk/v1/api/ajrmMarineLogger/status` only when diagnosing an
+  older installation
 - `/plugins/signalk-ajrm-marine-dr-plotter/status`
 - `/plugins/signalk-ajrm-marine-gps-integrity/status`
 - `/plugins/signalk-ajrm-marine-simulator/state`
@@ -101,7 +102,7 @@ By default, the API only serves localhost requests. Enable `Allow remote HTTP/br
 - Include AJRM Marine server state
 - Include AJRM Marine harbour region list
 - Include AJRM Marine Audio state
-- Include AJRM Marine Companion state
+- Include legacy AJRM Marine Companion state when that fallback app is installed
 - Include legacy announcer output
 - Include installed app versions
 - Include debug/raw fields
@@ -140,7 +141,7 @@ cd ~/.signalk
 2. Install the public GitHub repo as a Signal K dependency:
 
 ```sh
-npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.6.1 --omit=dev --no-package-lock
+npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.6.2 --omit=dev --no-package-lock
 ```
 
 3. Restart Signal K:
@@ -161,21 +162,17 @@ Reinstall it from `~/.signalk` so npm records it again:
 
 ```sh
 cd ~/.signalk
-npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.6.1 --omit=dev --no-package-lock
+npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.6.2 --omit=dev --no-package-lock
 sudo systemctl restart signalk
 ```
 
-If GitHub SSH access has not been set up on the Pi yet, confirm this works first:
-
-```sh
-ssh -T git@github.com
-```
+The public HTTPS install URL does not require a GitHub SSH key.
 
 ## Update on the Raspberry Pi
 
 ```sh
 cd ~/.signalk
-npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.6.1 --omit=dev --no-package-lock
+npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.6.2 --omit=dev --no-package-lock
 sudo systemctl restart signalk
 ```
 

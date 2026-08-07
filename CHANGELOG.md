@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.2
+
+- Update diagnostics and installation documentation for the current suite,
+  retaining the retired Logger endpoint only as a labelled legacy check.
+
 ## 0.6.1
 
 - Capture AJRM Marine Navigation Reference's selected position, ground vector,
