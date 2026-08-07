@@ -4,13 +4,10 @@
 
 It is not an MCP server and it does not call any AI service. It keeps selected Signal K values in memory, exposes a local snapshot endpoint, and provides a small web UI for previewing and copying the JSON.
 
-Version `0.5.3` includes the same long-voyage diagnostics when Capture calls
-Snapshot through the in-process API for unattended voyage recording.
-
-Version `0.2.3` adds named snapshot presets for AJRM Marine Capture. The
-`voyage` preset is compact and suitable for routine start/stop voyage records.
-The `debug` preset includes all targets plus raw debug fields for event
-investigation.
+Version `0.7.0` is the reviewed Signal K baseline. Snapshot remains a small
+standalone diagnostic provider because both Capture and Console consume its
+in-process API. It now reads collision policy and target state directly from
+Traffic, and removes retired Logger, Companion and announcer compatibility.
 
 ## What It Captures
 
@@ -19,7 +16,8 @@ investigation.
 - Battery voltage/current/state of charge when available
 - AIS target identity, range, bearing, motion, AIS GPS antenna offsets, CPA/TCPA, CPA reference, and risk status
 - Enriched encounter fields from AJRM Marine
-- AJRM Marine alarm profiles, sensitivity values, repeat intervals, speech-output settings, active alert events, recent announcement log, target silence state, auto-profile status, and harbour count when AJRM Marine is installed
+- Traffic alarm profiles, target state, auto-profile and audio policy, plus
+  Display alert history, announcement history and harbour count
 - AJRM Marine harbour region bounds only when the separate harbour-list option is enabled
 - AJRM Marine Audio render, queue, local playback, radio stream, volume, ping, voice, and recent event status when AJRM Marine Audio is installed
 - Installed Signal K plugin/webapp package names, display names, versions, and Git/npm source specs
@@ -57,14 +55,11 @@ from:
 - `/plugins/signalk-ajrm-marine-audio/status`
 - `/plugins/signalk-ajrm-marine-traffic/status`
 - `/plugins/signalk-ajrm-marine-capture/status`
-- the retired `/signalk/v1/api/ajrmMarineLogger/status` only when diagnosing an
-  older installation
 - `/plugins/signalk-ajrm-marine-dr-plotter/status`
 - `/plugins/signalk-ajrm-marine-gps-integrity/status`
 - `/plugins/signalk-ajrm-marine-simulator/state`
 - `/plugins/signalk-ajrm-marine-notifications/status`
 - `/signalk/v1/api/resources/charts`
-- `/plugins/announce-ais-messages/api/state`
 
 ## Endpoints
 
@@ -102,8 +97,6 @@ By default, the API only serves localhost requests. Enable `Allow remote HTTP/br
 - Include AJRM Marine server state
 - Include AJRM Marine harbour region list
 - Include AJRM Marine Audio state
-- Include legacy AJRM Marine Companion state when that fallback app is installed
-- Include legacy announcer output
 - Include installed app versions
 - Include debug/raw fields
 - Allow remote HTTP/browser access
@@ -141,7 +134,7 @@ cd ~/.signalk
 2. Install the public GitHub repo as a Signal K dependency:
 
 ```sh
-npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.6.2 --omit=dev --no-package-lock
+npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.7.0 --omit=dev --no-package-lock
 ```
 
 3. Restart Signal K:

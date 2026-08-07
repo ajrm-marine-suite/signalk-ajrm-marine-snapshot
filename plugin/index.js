@@ -21,14 +21,13 @@ const {
 } = require('./snapshot');
 
 const AJRM_MARINE_SNAPSHOT_API_REGISTRY = Symbol.for('mcdonaldajr.ajrmMarineSnapshotApi');
+const MAX_FETCH_BYTES = 2 * 1024 * 1024;
 const KNOWN_SUITE_PACKAGES = new Set([
   'signalk-ajrm-marine-snapshot',
   'signalk-ajrm-marine-audio',
   'signalk-ajrm-marine-console',
   'signalk-ajrm-marine-display',
   'signalk-ajrm-marine-traffic',
-  'signalk-ajrm-marine-instrument-alerts',
-  'signalk-ajrm-marine-logger',
   'signalk-ajrm-marine-dr-plotter',
   'signalk-ajrm-marine-gps-integrity',
   'signalk-ajrm-marine-navigation-reference',
@@ -38,7 +37,6 @@ const KNOWN_SUITE_PACKAGES = new Set([
   'signalk-ajrm-marine-pi-controller',
   'signalk-ajrm-marine-capture',
   'signalk-ajrm-marine-voyage-viewer',
-  'signalk-ajrm-marine-alerts',
   'signalk-ajrm-marine-simulator'
 ]);
 
@@ -52,6 +50,7 @@ module.exports = function startPlugin(app) {
     name: 'AJRM Marine Snapshot',
     description: 'Creates a compact local Signal K JSON snapshot for manual copy/paste into ChatGPT.'
   };
+  plugin.version = packageInfo.version;
 
   plugin.schema = function schema() {
     return {
@@ -119,18 +118,6 @@ module.exports = function startPlugin(app) {
           description: 'Adds AJRM Marine Audio render, queue, stream, volume, ping, and recent event status when the audio plugin is installed.',
           default: DEFAULT_OPTIONS.includeAisPlusAudio
         },
-        includeCompanion: {
-          type: 'boolean',
-          title: 'Include AJRM Marine Companion state',
-          description: 'Adds Companion certificate setup and guest iPhone setup status when the Companion plugin is installed.',
-          default: DEFAULT_OPTIONS.includeCompanion
-        },
-        includeAnnouncerOutput: {
-          type: 'boolean',
-          title: 'Include legacy announcer output',
-          description: 'Adds announce-ais-messages status if that older output plugin is still installed.',
-          default: DEFAULT_OPTIONS.includeAnnouncerOutput
-        },
         includeInstalledApps: {
           type: 'boolean',
           title: 'Include installed app versions',
@@ -140,7 +127,7 @@ module.exports = function startPlugin(app) {
         includeSuiteDiagnostics: {
           type: 'boolean',
           title: 'Include suite diagnostic plugin state',
-          description: 'Adds current plugin telemetry for AJRM Marine Logger, Capture, Pi Controller, Notifications, Traffic, Display, Audio, Console, and GPS Integrity when present.',
+          description: 'Adds current plugin telemetry for Capture, Pi Controller, Notifications, Traffic, Display, Audio, Console, Navigation Reference, and GPS Integrity when present.',
           default: DEFAULT_OPTIONS.includeSuiteDiagnostics
         },
         includeDebugRaw: {
@@ -180,6 +167,7 @@ module.exports = function startPlugin(app) {
   };
 
   plugin.start = function start(settings) {
+    plugin.stop();
     currentOptions = normalizeOptions(settings);
     state = createSnapshotState();
 
@@ -238,6 +226,7 @@ module.exports = function startPlugin(app) {
     });
 
     logDebug('Plugin started');
+    app.setPluginStatus?.(`v${packageInfo.version} - diagnostic snapshot ready`);
   };
 
   plugin.stop = function stop() {
@@ -256,6 +245,7 @@ module.exports = function startPlugin(app) {
       delete globalThis[AJRM_MARINE_SNAPSHOT_API_REGISTRY];
     }
     clearSnapshotState(state);
+    app.setPluginStatus?.('Stopped');
     logDebug('Plugin stopped');
   };
 
@@ -283,10 +273,6 @@ module.exports = function startPlugin(app) {
         if (requestOptions.includeAisPlusAudio) {
           const audio = await loadAjrmMarineAudioSnapshot(req);
           if (audio) snapshot.ajrmMarineAudio = audio;
-        }
-        if (requestOptions.includeAnnouncerOutput) {
-          const announcer = await loadAnnouncerSnapshot(req);
-          if (announcer) snapshot.announcer = announcer;
         }
         if (requestOptions.includeInstalledApps) {
           const installedApps = loadInstalledApps();
@@ -376,91 +362,37 @@ module.exports = function startPlugin(app) {
   }
 
   function canServe(req) {
-    return currentOptions.allowRemoteAccess || isLocalRequest(req);
+    if (isLocalRequest(req)) return true;
+    if (!currentOptions.allowRemoteAccess || req.skIsAuthenticated === false) return false;
+    const permission = req.skPrincipal?.permissions;
+    return ['read', 'readonly', 'readwrite', 'admin'].includes(permission) || permission === undefined;
   }
 
   async function loadAjrmMarineSnapshot(req, options) {
     const [
-      profiles,
-      repeatIntervals,
-      speechOutputSettings,
-      autoProfileStatus,
-      autoProfileSettings,
+      traffic,
       harbourRegions,
       alertEvents,
-      announcementLog,
-      targets
+      announcementLog
     ] = await Promise.all([
-      fetchLocalJson(req, '/plugins/signalk-ajrm-marine-display/getCollisionProfiles'),
-      fetchLocalJson(req, '/plugins/signalk-ajrm-marine-display/repeatIntervals'),
-      fetchLocalJson(req, '/plugins/signalk-ajrm-marine-display/getSpeechOutputSettings'),
-      fetchLocalJson(req, '/plugins/signalk-ajrm-marine-display/autoProfileStatus'),
-      fetchLocalJson(req, '/plugins/signalk-ajrm-marine-display/autoProfileSettings'),
+      fetchLocalJson(req, '/plugins/signalk-ajrm-marine-traffic/status'),
       fetchLocalJson(req, '/plugins/signalk-ajrm-marine-display/harbourRegions'),
       fetchLocalJson(req, '/plugins/signalk-ajrm-marine-display/alertEvents'),
-      fetchLocalJson(req, '/plugins/signalk-ajrm-marine-display/announcementLog?limit=12'),
-      fetchLocalJson(req, '/plugins/signalk-ajrm-marine-display/getTargets')
+      fetchLocalJson(req, '/plugins/signalk-ajrm-marine-display/announcementLog?limit=12')
     ]);
 
-    if (
-      !profiles &&
-      !repeatIntervals &&
-      !speechOutputSettings &&
-      !autoProfileStatus &&
-      !autoProfileSettings &&
-      !harbourRegions &&
-      !alertEvents &&
-      !announcementLog &&
-      !targets
-    ) return null;
+    if (!traffic && !harbourRegions && !alertEvents && !announcementLog) return null;
 
     const output = {
-      plugin: 'signalk-ajrm-marine-display'
+      contract: 'ajrm-marine-suite-snapshot',
+      contractVersion: 1
     };
 
-    if (profiles) {
-      output.profiles = summarizeCollisionProfiles(profiles);
-    }
-
-    if (repeatIntervals) {
-      output.repeatIntervals = repeatIntervals;
-    }
-
-    if (speechOutputSettings) {
-      output.speechOutput = compactSpeechOutputSettings(speechOutputSettings);
-    }
-
-    if (autoProfileStatus) {
-      output.autoProfile = {
-        enabled: autoProfileStatus.options && autoProfileStatus.options.enabled !== false,
-        currentProfile: autoProfileStatus.currentProfile,
-        harbourProfile: autoProfileStatus.options && autoProfileStatus.options.harbourProfile,
-        outsideProfile: autoProfileStatus.options && autoProfileStatus.options.outsideProfile,
-        enterDistanceMeters: autoProfileStatus.options && autoProfileStatus.options.enterDistanceMeters,
-        exitDistanceMeters: autoProfileStatus.options && autoProfileStatus.options.exitDistanceMeters,
-        anchorReleaseSpeed: autoProfileStatus.options && autoProfileStatus.options.anchorReleaseSpeed,
-        message: autoProfileStatus.message,
-        state: autoProfileStatus.state || {}
-      };
-    } else if (autoProfileSettings) {
-      output.autoProfile = {
-        enabled: autoProfileSettings.enabled !== false,
-        harbourProfile: autoProfileSettings.harbourProfile,
-        outsideProfile: autoProfileSettings.outsideProfile,
-        enterDistanceMeters: autoProfileSettings.enterDistanceMeters,
-        exitDistanceMeters: autoProfileSettings.exitDistanceMeters,
-        anchorReleaseSpeed: autoProfileSettings.anchorReleaseSpeed
-      };
-    }
+    if (traffic) output.traffic = compactTrafficStatus(traffic);
 
     if (harbourRegions && Array.isArray(harbourRegions.regions)) {
       output.harbours = harbourRegionsSnapshot(
         harbourRegions.regions,
-        options.includeAisPlusHarbourRegions
-      );
-    } else if (autoProfileStatus && Array.isArray(autoProfileStatus.regions)) {
-      output.harbours = harbourRegionsSnapshot(
-        autoProfileStatus.regions,
         options.includeAisPlusHarbourRegions
       );
     }
@@ -473,15 +405,6 @@ module.exports = function startPlugin(app) {
       output.announcementLogRecent = announcementLog.entries.slice(0, 12).map(compactAnnouncementLogEntry);
     }
 
-    if (targets && typeof targets === 'object') {
-      const targetEntries = Object.values(targets).map(compactTargetState).filter(Boolean);
-      output.targetState = {
-        count: targetEntries.length,
-        silenced: targetEntries.filter(target => target.alarmIsMuted).length,
-        targets: targetEntries
-      };
-    }
-
     return output;
   }
 
@@ -492,24 +415,10 @@ module.exports = function startPlugin(app) {
     return compactAudioStatus(status);
   }
 
-  async function loadAnnouncerSnapshot(req) {
-    const state = await fetchLocalJson(req, '/plugins/announce-ais-messages/api/state');
-    if (!state) return null;
-
-    return {
-      plugin: 'announce-ais-messages',
-      status: compactAnnouncerStatus(state.status),
-      active: compactAnnouncerEntries(state.active, 8),
-      spokenRecent: compactAnnouncerEntries(state.spoken, 8),
-      logRecent: compactAnnouncerEntries(state.log, 8)
-    };
-  }
-
   async function loadLongVoyageDiagnostics(fetchJson) {
     const [
       traffic,
       capture,
-      logger,
       drPlotter,
       gpsIntegrity,
       simulator,
@@ -518,7 +427,6 @@ module.exports = function startPlugin(app) {
     ] = await Promise.all([
       fetchJson('/plugins/signalk-ajrm-marine-traffic/status'),
       fetchJson('/plugins/signalk-ajrm-marine-capture/status'),
-      fetchJson('/signalk/v1/api/ajrmMarineLogger/status'),
       fetchJson('/plugins/signalk-ajrm-marine-dr-plotter/status'),
       fetchJson('/plugins/signalk-ajrm-marine-gps-integrity/status'),
       fetchJson('/plugins/signalk-ajrm-marine-simulator/state'),
@@ -529,7 +437,6 @@ module.exports = function startPlugin(app) {
     const output = {};
     if (traffic) output.traffic = compactTrafficStatus(traffic);
     if (capture) output.capture = compactCaptureStatus(capture);
-    if (logger) output.logger = compactLoggerStatus(logger);
     if (drPlotter) output.drPlotter = compactDrPlotterStatus(drPlotter);
     if (gpsIntegrity) output.gpsIntegrity = compactGpsIntegrityStatus(gpsIntegrity);
     if (simulator) output.simulator = compactSimulatorState(simulator);
@@ -572,6 +479,10 @@ module.exports = function startPlugin(app) {
           let body = '';
           response.setEncoding('utf8');
           response.on('data', chunk => {
+            if (body.length + chunk.length > MAX_FETCH_BYTES) {
+              request.destroy(new Error('response too large'));
+              return;
+            }
             body += chunk;
           });
           response.on('end', () => {
@@ -625,21 +536,6 @@ module.exports = function startPlugin(app) {
       tcpaLookahead: profile.tcpaLookahead,
       repeatSensitivity: profile.repeatSensitivity
     };
-  }
-
-  function compactSpeechOutputSettings(settings) {
-    const output = {};
-    [
-      'piSpeech',
-      'browserSpeech',
-      'muted',
-      'automuteStationary',
-      'automuteStationarySpeed',
-      'alertPanel',
-      'alertPopupSound',
-      'showAlarmPopup'
-    ].forEach(key => copyIfPresent(output, settings, key));
-    return output;
   }
 
   function compactAlertEvent(event) {
@@ -816,41 +712,15 @@ module.exports = function startPlugin(app) {
       'speedKnots',
       'voyageComment',
       'autoStartInhibited',
-      'loggerPlaybackActive',
       'movementSuppressedUntilFreshSpeed',
       'thresholds',
       'disk',
       'currentVoyage',
-      'lastBundle',
-      'ajrmMarineLogger'
+      'lastBundle'
     ].forEach(key => copyIfPresent(output, status, key));
     if (Array.isArray(status.voyages)) {
       output.voyages = compactFileList(status.voyages, 12);
     }
-    if (Array.isArray(status.recentEvents)) {
-      output.recentEvents = status.recentEvents.slice(0, 20).map(compactEvent);
-    }
-    return output;
-  }
-
-  function compactLoggerStatus(status) {
-    const output = {};
-    [
-      'plugin',
-      'version',
-      'ok',
-      'timestamp',
-      'options',
-      'paths',
-      'disk',
-      'buffer',
-      'recording',
-      'playback',
-      'stats'
-    ].forEach(key => copyIfPresent(output, status, key));
-    if (Array.isArray(status.voyages)) output.voyages = compactFileList(status.voyages, 12);
-    if (Array.isArray(status.captures)) output.captures = compactFileList(status.captures, 12);
-    if (Array.isArray(status.clips)) output.clips = compactFileList(status.clips, 12);
     if (Array.isArray(status.recentEvents)) {
       output.recentEvents = status.recentEvents.slice(0, 20).map(compactEvent);
     }
@@ -1033,52 +903,6 @@ module.exports = function startPlugin(app) {
     return Object.keys(output).length ? output : event;
   }
 
-  function compactAnnouncerStatus(status) {
-    if (!status || typeof status !== 'object') return undefined;
-    const compact = {};
-    const playback = status.playback && typeof status.playback === 'object' ? status.playback : {};
-    const speech = status.speech && typeof status.speech === 'object' ? status.speech : {};
-
-    if (Object.keys(playback).length) {
-      compact.playback = {};
-      copyIfPresent(compact.playback, playback, 'isSpeaking');
-      copyIfPresent(compact.playback, playback, 'current');
-      copyIfPresent(compact.playback, playback, 'queueLength');
-    }
-
-    if (Object.keys(speech).length) {
-      compact.speech = {};
-      copyIfPresent(compact.speech, speech, 'engine');
-      copyIfPresent(compact.speech, speech, 'ready');
-      copyIfPresent(compact.speech, speech, 'binary');
-      copyIfPresent(compact.speech, speech, 'modelPath');
-      copyIfPresent(compact.speech, speech, 'audioPlayer');
-    }
-
-    return Object.keys(compact).length ? compact : undefined;
-  }
-
-  function compactAnnouncerEntries(entries, limit) {
-    if (!Array.isArray(entries)) return [];
-
-    return entries.slice(0, limit).map(entry => {
-      const compact = {};
-      [
-        'ts',
-        'event',
-        'vesselName',
-        'severity',
-        'category',
-        'message',
-        'currentMessage',
-        'currentTs',
-        'methods',
-        'isCurrent'
-      ].forEach(key => copyIfPresent(compact, entry, key));
-      return compact;
-    });
-  }
-
   function copyIfPresent(target, source, key) {
     const value = source && source[key];
     if (typeof value === 'undefined' || value === null || value === '') return;
@@ -1144,7 +968,6 @@ module.exports = function startPlugin(app) {
   function loadSuiteDiagnostics() {
     if (!app || typeof app.getSelfPath !== 'function') return null;
     const paths = {
-      ajrmMarineLogger: 'plugins.ajrmMarineLogger',
       ajrmMarineCapture: 'plugins.ajrmMarineCapture',
       ajrmMarinePiController: 'plugins.ajrmMarinePiController',
       ajrmMarineNotifications: 'plugins.ajrmMarineNotifications',

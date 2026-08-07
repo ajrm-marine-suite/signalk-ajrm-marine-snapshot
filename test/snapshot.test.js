@@ -502,8 +502,6 @@ test('query overrides cannot enable remote access', () => {
       includeAisPlus: true,
       includeAisPlusHarbourRegions: false,
       includeAisPlusAudio: true,
-      includeCompanion: true,
-      includeAnnouncerOutput: false,
       includeInstalledApps: true
     },
     {
@@ -512,8 +510,6 @@ test('query overrides cannot enable remote access', () => {
       includeAisPlus: 'false',
       includeAisPlusHarbourRegions: 'true',
       includeAisPlusAudio: 'false',
-      includeCompanion: 'false',
-      includeAnnouncerOutput: 'true',
       includeInstalledApps: 'false'
     }
   );
@@ -523,8 +519,6 @@ test('query overrides cannot enable remote access', () => {
   assert.equal(options.includeAisPlus, false);
   assert.equal(options.includeAisPlusHarbourRegions, true);
   assert.equal(options.includeAisPlusAudio, false);
-  assert.equal(options.includeCompanion, false);
-  assert.equal(options.includeAnnouncerOutput, true);
   assert.equal(options.includeInstalledApps, false);
 });
 
@@ -575,7 +569,18 @@ test('AJRM Marine snapshot keeps the harbour list optional', async () => {
     ]
   };
   const server = http.createServer((req, res) => {
-    if (new URL(req.url, 'http://localhost').pathname === '/plugins/signalk-ajrm-marine-display/harbourRegions') {
+    const requestPath = new URL(req.url, 'http://localhost').pathname;
+    if (requestPath === '/plugins/signalk-ajrm-marine-traffic/status') {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({
+        plugin: 'signalk-ajrm-marine-traffic',
+        version: '0.7.0',
+        profiles: { current: 'coastal', coastal: { enabled: true, cpa: 0.5 } },
+        targets: [{ mmsi: '235000001', lastAlarmState: 'warning' }]
+      }));
+      return;
+    }
+    if (requestPath === '/plugins/signalk-ajrm-marine-display/harbourRegions') {
       res.writeHead(200, { 'content-type': 'application/json' });
       res.end(JSON.stringify(harbourPayload));
       return;
@@ -591,8 +596,6 @@ test('AJRM Marine snapshot keeps the harbour list optional', async () => {
     const baseQuery = {
       includeAisPlus: 'true',
       includeAisPlusAudio: 'false',
-      includeCompanion: 'false',
-      includeAnnouncerOutput: 'false'
     };
     const host = `127.0.0.1:${server.address().port}`;
     const compact = await invokeSnapshotRoute(route, host, baseQuery);
@@ -602,6 +605,8 @@ test('AJRM Marine snapshot keeps the harbour list optional', async () => {
     });
 
     assert.equal(compact.ajrmMarine.harbours.count, 2);
+    assert.equal(compact.ajrmMarine.traffic.plugin, 'signalk-ajrm-marine-traffic');
+    assert.equal(compact.ajrmMarine.traffic.profiles.current, 'coastal');
     assert.equal(compact.ajrmMarine.harbours.regions, undefined);
     assert.equal(expanded.ajrmMarine.harbours.count, 2);
     assert.deepEqual(expanded.ajrmMarine.harbours.regions, [
@@ -651,8 +656,6 @@ test('snapshot includes installed Signal K app versions', async () => {
   const snapshot = await invokeSnapshotRoute(route, '127.0.0.1', {
     includeAisPlus: 'false',
     includeAisPlusAudio: 'false',
-    includeCompanion: 'false',
-    includeAnnouncerOutput: 'false',
     includeInstalledApps: 'true',
     includeSuiteDiagnostics: 'false'
   });
@@ -696,15 +699,6 @@ test('snapshot includes long voyage diagnostics from plugin status routes', asyn
       ],
       recentEvents: [
         { at: '2026-06-26T20:31:31.840Z', type: 'voyage-stopped', message: 'manual' }
-      ]
-    },
-    '/signalk/v1/api/ajrmMarineLogger/status': {
-      plugin: 'signalk-ajrm-marine-logger',
-      version: '0.5.5',
-      playback: { active: false, rate: 'max' },
-      stats: { playbackSent: 47897 },
-      voyages: [
-        { fileName: 'voyage-20260626T201629Z.zip', bytes: 101883 }
       ]
     },
     '/plugins/signalk-ajrm-marine-dr-plotter/status': {
@@ -767,15 +761,12 @@ test('snapshot includes long voyage diagnostics from plugin status routes', asyn
     const snapshot = await invokeSnapshotRoute(route, `127.0.0.1:${server.address().port}`, {
       includeAisPlus: 'false',
       includeAisPlusAudio: 'false',
-      includeCompanion: 'false',
-      includeAnnouncerOutput: 'false',
       includeInstalledApps: 'false',
       includeSuiteDiagnostics: 'true'
     });
 
     assert.equal(snapshot.longVoyageDiagnostics.traffic.targets.count, 1);
     assert.equal(snapshot.longVoyageDiagnostics.capture.voyages[0].comment, 'Long soak test');
-    assert.equal(snapshot.longVoyageDiagnostics.logger.playback.rate, 'max');
     assert.equal(snapshot.longVoyageDiagnostics.drPlotter.noAisTargets, true);
     assert.equal(snapshot.longVoyageDiagnostics.gpsIntegrity.sample.sogKnots, 5.4);
     assert.equal(snapshot.longVoyageDiagnostics.simulator.targets.count, 1);
@@ -847,6 +838,72 @@ test('in-process snapshot API reports browser access readiness', async () => {
   assert.equal(status.allowRemoteAccess, true);
   assert.equal(status.snapshotPath, '/plugins/signalk-ajrm-marine-snapshot/snapshot');
   assert.equal(status.settingsPath, '/plugins/signalk-ajrm-marine-snapshot/settings');
+});
+
+test('restart releases prior subscriptions and keeps one in-process API', () => {
+  let subscribed = 0;
+  let unsubscribed = 0;
+  const app = {
+    ...fakeApp({}),
+    debug() {},
+    error() {},
+    setPluginStatus() {},
+    subscriptionmanager: {
+      subscribe(_subscription, unsubscribes) {
+        subscribed += 1;
+        unsubscribes.push(() => { unsubscribed += 1; });
+      }
+    }
+  };
+  const plugin = startPlugin(app);
+
+  plugin.start({});
+  const firstApi = app.ajrmMarineSnapshotApi;
+  plugin.start({});
+  assert.equal(subscribed, 4);
+  assert.equal(unsubscribed, 2);
+  assert.notEqual(app.ajrmMarineSnapshotApi, firstApi);
+
+  plugin.stop();
+  assert.equal(unsubscribed, 4);
+  assert.equal(app.ajrmMarineSnapshotApi, undefined);
+});
+
+test('remote snapshot access requires both opt-in and Signal K authentication', async () => {
+  const plugin = startPlugin({ ...fakeApp({}), debug() {}, error() {} });
+  plugin.start({ allowRemoteAccess: true, includeAisPlus: false, includeAisPlusAudio: false });
+  const route = snapshotRouteHandler(plugin);
+  let statusCode = 200;
+  let body;
+  await route({
+    ip: '192.168.1.20',
+    skIsAuthenticated: false,
+    skPrincipal: { permissions: 'readonly' },
+    query: {},
+    protocol: 'http',
+    get() { return 'nemo.local:3000'; }
+  }, {
+    status(code) { statusCode = code; return this; },
+    json(value) { body = value; },
+    set() {}
+  });
+  assert.equal(statusCode, 403);
+  assert.match(body.error, /local-only/);
+  plugin.stop();
+});
+
+test('OpenAPI paths match the registered HTTP API', () => {
+  const routes = new Map();
+  const plugin = startPlugin({ ...fakeApp({}), debug() {}, error() {} });
+  plugin.registerWithRouter({
+    get(path, handler) { routes.set(`GET ${path}`, handler); }
+  });
+  const documented = Object.entries(plugin.getOpenApi().paths).flatMap(([path, pathItem]) =>
+    Object.keys(pathItem)
+      .filter(method => method === 'get')
+      .map(method => `${method.toUpperCase()} ${path}`)
+  );
+  assert.deepEqual([...routes.keys()].sort(), documented.sort());
 });
 
 test('filters own vessel from AIS targets when self MMSI is known', () => {

@@ -7,9 +7,7 @@ const controls = {
   includeAisPlus: document.getElementById('includeAisPlus'),
   includeAisPlusHarbourRegions: document.getElementById('includeAisPlusHarbourRegions'),
   includeAisPlusAudio: document.getElementById('includeAisPlusAudio'),
-  includeCompanion: document.getElementById('includeCompanion'),
   includeDebugRaw: document.getElementById('includeDebugRaw'),
-  includeAnnouncerOutput: document.getElementById('includeAnnouncerOutput'),
   includeInstalledApps: document.getElementById('includeInstalledApps'),
   maxTargetAgeSeconds: document.getElementById('maxTargetAgeSeconds'),
   maxAisRangeNm: document.getElementById('maxAisRangeNm')
@@ -62,9 +60,7 @@ async function loadSettings() {
     controls.includeAisPlus.checked = options.includeAisPlus !== false;
     controls.includeAisPlusHarbourRegions.checked = Boolean(options.includeAisPlusHarbourRegions);
     controls.includeAisPlusAudio.checked = options.includeAisPlusAudio !== false;
-    controls.includeCompanion.checked = options.includeCompanion !== false;
     controls.includeDebugRaw.checked = Boolean(options.includeDebugRaw);
-    controls.includeAnnouncerOutput.checked = Boolean(options.includeAnnouncerOutput);
     controls.includeInstalledApps.checked = options.includeInstalledApps !== false;
     controls.maxTargetAgeSeconds.value = options.maxTargetAgeSeconds || 120;
     controls.maxAisRangeNm.value = options.maxAisRangeNm || 6;
@@ -106,8 +102,6 @@ function snapshotQuery() {
   params.set('includeAisPlus', String(controls.includeAisPlus.checked));
   params.set('includeAisPlusHarbourRegions', String(controls.includeAisPlusHarbourRegions.checked));
   params.set('includeAisPlusAudio', String(controls.includeAisPlusAudio.checked));
-  params.set('includeCompanion', String(controls.includeCompanion.checked));
-  params.set('includeAnnouncerOutput', String(controls.includeAnnouncerOutput.checked));
   params.set('includeInstalledApps', String(controls.includeInstalledApps.checked));
   params.set('includeDebugRaw', String(controls.includeDebugRaw.checked));
   params.set('maxTargetAgeSeconds', controls.maxTargetAgeSeconds.value || '120');

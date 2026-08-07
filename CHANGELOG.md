@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.7.0
+
+- Keep Snapshot standalone as the shared diagnostic provider used by Capture
+  and Console, with safe cleanup when Signal K starts the plugin again.
+- Read collision policy, Auto Profile, audio policy and targets directly from
+  Traffic instead of through Display compatibility routes.
+- Remove retired Logger, Companion, old announcer and split Alerts package
+  compatibility from snapshots and installed-suite discovery.
+- Report the package version and current lifecycle state through Signal K's
+  plugin status API, and align OpenAPI and help with the reviewed API.
+
 ## 0.6.2
 
 - Update diagnostics and installation documentation for the current suite,

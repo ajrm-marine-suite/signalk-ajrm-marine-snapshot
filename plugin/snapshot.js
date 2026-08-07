@@ -16,8 +16,6 @@ const DEFAULT_OPTIONS = Object.freeze({
   includeAisPlus: true,
   includeAisPlusHarbourRegions: false,
   includeAisPlusAudio: true,
-  includeCompanion: true,
-  includeAnnouncerOutput: false,
   includeInstalledApps: true,
   includeSuiteDiagnostics: true,
   includeDebugRaw: false,
@@ -34,7 +32,6 @@ const SNAPSHOT_PRESETS = Object.freeze({
     includeDebugRaw: false,
     includeAisPlus: true,
     includeAisPlusAudio: true,
-    includeCompanion: true,
     includeInstalledApps: true,
     includeSuiteDiagnostics: true
   },
@@ -45,7 +42,6 @@ const SNAPSHOT_PRESETS = Object.freeze({
     includeDebugRaw: true,
     includeAisPlus: true,
     includeAisPlusAudio: true,
-    includeCompanion: true,
     includeInstalledApps: true,
     includeSuiteDiagnostics: true
   }
@@ -115,8 +111,6 @@ function normalizeOptions(input) {
       DEFAULT_OPTIONS.includeAisPlusHarbourRegions
     ),
     includeAisPlusAudio: booleanValue(source.includeAisPlusAudio, DEFAULT_OPTIONS.includeAisPlusAudio),
-    includeCompanion: booleanValue(source.includeCompanion, DEFAULT_OPTIONS.includeCompanion),
-    includeAnnouncerOutput: booleanValue(source.includeAnnouncerOutput, DEFAULT_OPTIONS.includeAnnouncerOutput),
     includeInstalledApps: booleanValue(source.includeInstalledApps, DEFAULT_OPTIONS.includeInstalledApps),
     includeSuiteDiagnostics: booleanValue(source.includeSuiteDiagnostics, DEFAULT_OPTIONS.includeSuiteDiagnostics),
     includeDebugRaw: booleanValue(source.includeDebugRaw, DEFAULT_OPTIONS.includeDebugRaw),
@@ -143,8 +137,6 @@ function optionsWithQueryOverrides(baseOptions, query) {
   setBooleanOverride(options, source, 'includeAisPlus');
   setBooleanOverride(options, source, 'includeAisPlusHarbourRegions');
   setBooleanOverride(options, source, 'includeAisPlusAudio');
-  setBooleanOverride(options, source, 'includeCompanion');
-  setBooleanOverride(options, source, 'includeAnnouncerOutput');
   setBooleanOverride(options, source, 'includeInstalledApps');
   setBooleanOverride(options, source, 'includeSuiteDiagnostics');
   setBooleanOverride(options, source, 'includeDebugRaw');
