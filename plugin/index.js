@@ -1,3 +1,7 @@
+/**
+ * Signal K server entry point for AJRM Marine Snapshot; registers lifecycle, subscriptions, routes, and status.
+ */
+
 'use strict';
 
 const fs = require('node:fs');

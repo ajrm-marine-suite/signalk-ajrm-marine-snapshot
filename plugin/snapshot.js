@@ -1,3 +1,7 @@
+/**
+ * Implements the snapshot responsibilities of the AJRM Marine Snapshot Signal K server.
+ */
+
 'use strict';
 
 const METERS_PER_NM = 1852;

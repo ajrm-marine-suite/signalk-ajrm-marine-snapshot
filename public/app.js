@@ -1,3 +1,7 @@
+/**
+ * Browser entry point for AJRM Marine Snapshot; binds operator controls and renders server state.
+ */
+
 'use strict';
 
 const controls = {
