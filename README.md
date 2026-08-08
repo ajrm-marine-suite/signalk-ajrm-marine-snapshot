@@ -55,7 +55,7 @@ from:
 - `/plugins/signalk-ajrm-marine-audio/status`
 - `/plugins/signalk-ajrm-marine-traffic/status`
 - `/plugins/signalk-ajrm-marine-capture/status`
-- `/plugins/signalk-ajrm-marine-dr-plotter/status`
+- `/plugins/signalk-ajrm-marine-gps-integrity/plotter/status`
 - `/plugins/signalk-ajrm-marine-gps-integrity/status`
 - `/plugins/signalk-ajrm-marine-simulator/state`
 - `/plugins/signalk-ajrm-marine-notifications/status`

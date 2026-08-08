@@ -701,7 +701,7 @@ test('snapshot includes long voyage diagnostics from plugin status routes', asyn
         { at: '2026-06-26T20:31:31.840Z', type: 'voyage-stopped', message: 'manual' }
       ]
     },
-    '/plugins/signalk-ajrm-marine-dr-plotter/status': {
+    '/plugins/signalk-ajrm-marine-gps-integrity/plotter/status': {
       plugin: 'signalk-ajrm-marine-dr-plotter',
       version: '0.5.0',
       enabled: true,

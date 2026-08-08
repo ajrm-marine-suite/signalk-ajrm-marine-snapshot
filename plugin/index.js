@@ -28,9 +28,7 @@ const KNOWN_SUITE_PACKAGES = new Set([
   'signalk-ajrm-marine-console',
   'signalk-ajrm-marine-display',
   'signalk-ajrm-marine-traffic',
-  'signalk-ajrm-marine-dr-plotter',
   'signalk-ajrm-marine-gps-integrity',
-  'signalk-ajrm-marine-navigation-reference',
   'signalk-ajrm-marine-harbour-editor',
   'signalk-ajrm-marine-instruments',
   'signalk-ajrm-marine-notifications',
@@ -427,7 +425,7 @@ module.exports = function startPlugin(app) {
     ] = await Promise.all([
       fetchJson('/plugins/signalk-ajrm-marine-traffic/status'),
       fetchJson('/plugins/signalk-ajrm-marine-capture/status'),
-      fetchJson('/plugins/signalk-ajrm-marine-dr-plotter/status'),
+      fetchJson('/plugins/signalk-ajrm-marine-gps-integrity/plotter/status'),
       fetchJson('/plugins/signalk-ajrm-marine-gps-integrity/status'),
       fetchJson('/plugins/signalk-ajrm-marine-simulator/state'),
       fetchJson('/plugins/signalk-ajrm-marine-notifications/status'),
