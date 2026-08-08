@@ -881,7 +881,7 @@ test('remote snapshot access requires both opt-in and Signal K authentication', 
     skPrincipal: { permissions: 'readonly' },
     query: {},
     protocol: 'http',
-    get() { return 'nemo.local:3000'; }
+    get() { return 'boat-pi.local:3000'; }
   }, {
     status(code) { statusCode = code; return this; },
     json(value) { body = value; },
