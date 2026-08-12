@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.3
+
+- Give Snapshot action buttons the suite's raised three-dimensional treatment,
+  including an unmistakable depressed state while a button is pressed.
+- Add a high-contrast keyboard focus outline and versioned browser assets.
+
 ## 0.7.2
 
 - Add concise purpose headers to every maintained runtime module so its role is
