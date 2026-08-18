@@ -25,6 +25,8 @@ const {
 } = require('./snapshot');
 
 const AJRM_MARINE_SNAPSHOT_API_REGISTRY = Symbol.for('mcdonaldajr.ajrmMarineSnapshotApi');
+const AJRM_MARINE_LOCATION_DIAGNOSTICS_REGISTRY = Symbol.for('mcdonaldajr.ajrmMarineLocationDiagnostics');
+const AJRM_MARINE_PLANNING_DIAGNOSTICS_REGISTRY = Symbol.for('mcdonaldajr.ajrmMarinePlanningDiagnostics');
 const MAX_FETCH_BYTES = 2 * 1024 * 1024;
 const KNOWN_SUITE_PACKAGES = new Set([
   'signalk-ajrm-marine-snapshot',
@@ -376,10 +378,12 @@ module.exports = function startPlugin(app) {
     };
     const [locations, planning] = await Promise.all([
       callDiagnosticSnapshot(
-        app.ajrmMarineLocationDiagnostics,
+        app.ajrmMarineLocationDiagnostics || globalThis[AJRM_MARINE_LOCATION_DIAGNOSTICS_REGISTRY],
         { includeLocations: requestOptions.includeDebugRaw === true }
       ),
-      callDiagnosticSnapshot(app.ajrmMarinePlanningDiagnostics)
+      callDiagnosticSnapshot(
+        app.ajrmMarinePlanningDiagnostics || globalThis[AJRM_MARINE_PLANNING_DIAGNOSTICS_REGISTRY]
+      )
     ]);
     if (locations) output.locations = sanitizeDiagnosticValue(locations);
     if (planning) output.planning = sanitizeDiagnosticValue(planning);

@@ -825,9 +825,9 @@ test('in-process snapshot API includes long voyage diagnostics', async () => {
   }
 });
 
-test('snapshot includes full shared tide, weather and planning diagnostics while redacting credentials', async () => {
+test('snapshot includes cross-plugin tide, weather and planning diagnostics while redacting credentials', async t => {
   const app = fakeAppWithConfig({}, await fs.mkdtemp(path.join(os.tmpdir(), 'ai-snapshot-planning-')));
-  app.ajrmMarineLocationDiagnostics = {
+  globalThis[Symbol.for('mcdonaldajr.ajrmMarineLocationDiagnostics')] = {
     contract: 'ajrm-marine-location-diagnostics-v1',
     async snapshot(request) {
       return {
@@ -849,7 +849,7 @@ test('snapshot includes full shared tide, weather and planning diagnostics while
       };
     }
   };
-  app.ajrmMarinePlanningDiagnostics = {
+  globalThis[Symbol.for('mcdonaldajr.ajrmMarinePlanningDiagnostics')] = {
     contract: 'ajrm-marine-planning-diagnostics-v1',
     async snapshot() {
       return {
@@ -859,6 +859,10 @@ test('snapshot includes full shared tide, weather and planning diagnostics while
       };
     }
   };
+  t.after(() => {
+    delete globalThis[Symbol.for('mcdonaldajr.ajrmMarineLocationDiagnostics')];
+    delete globalThis[Symbol.for('mcdonaldajr.ajrmMarinePlanningDiagnostics')];
+  });
   const route = snapshotRouteHandler(startPlugin(app));
   const snapshot = await invokeSnapshotRoute(route, '127.0.0.1', {
     includeAisPlus: 'false',

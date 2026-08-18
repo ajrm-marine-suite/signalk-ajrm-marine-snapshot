@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.5
+
+- Resolve Location Editor and Planning diagnostics through their process-wide
+  registries so Snapshot can collect cross-plugin state under Signal K's
+  separate per-plugin `app` wrappers.
+
 ## 0.7.4
 
 - Capture the new shared Location Editor and Planning diagnostic contracts by
