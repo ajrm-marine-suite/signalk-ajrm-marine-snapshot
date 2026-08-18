@@ -34,6 +34,8 @@ const KNOWN_SUITE_PACKAGES = new Set([
   'signalk-ajrm-marine-traffic',
   'signalk-ajrm-marine-gps-integrity',
   'signalk-ajrm-marine-harbour-editor',
+  'signalk-ajrm-marine-location-editor',
+  'signalk-ajrm-marine-planning',
   'signalk-ajrm-marine-instruments',
   'signalk-ajrm-marine-notifications',
   'signalk-ajrm-marine-pi-controller',
@@ -131,6 +133,12 @@ module.exports = function startPlugin(app) {
           title: 'Include suite diagnostic plugin state',
           description: 'Adds current plugin telemetry for Capture, Pi Controller, Notifications, Traffic, Display, Audio, Console, Navigation Reference, and GPS Integrity when present.',
           default: DEFAULT_OPTIONS.includeSuiteDiagnostics
+        },
+        includeSharedPlanningData: {
+          type: 'boolean',
+          title: 'Include locations, tides, weather and planning diagnostics',
+          description: 'Adds the current shared location catalogue summary, full last-fetched tide and weather data, anchoring assistance, planner settings, constants and live inputs.',
+          default: DEFAULT_OPTIONS.includeSharedPlanningData
         },
         includeDebugRaw: {
           type: 'boolean',
@@ -286,6 +294,10 @@ module.exports = function startPlugin(app) {
           const longVoyageDiagnostics = await loadLongVoyageDiagnostics(path => fetchLocalJson(req, path));
           if (longVoyageDiagnostics) snapshot.longVoyageDiagnostics = longVoyageDiagnostics;
         }
+        if (requestOptions.includeSharedPlanningData) {
+          const sharedPlanning = await loadSharedPlanningData(requestOptions);
+          if (sharedPlanning) snapshot.sharedPlanning = sharedPlanning;
+        }
         res.set('Cache-Control', 'no-store');
         res.status(200).json(snapshot);
       } catch (err) {
@@ -349,7 +361,42 @@ module.exports = function startPlugin(app) {
       const installedApps = loadInstalledApps();
       if (installedApps) snapshot.installedApps = installedApps;
     }
+    if (requestOptions.includeSharedPlanningData) {
+      const sharedPlanning = await loadSharedPlanningData(requestOptions);
+      if (sharedPlanning) snapshot.sharedPlanning = sharedPlanning;
+    }
     return snapshot;
+  }
+
+  async function loadSharedPlanningData(requestOptions) {
+    const output = {
+      contract: 'ajrm-marine-snapshot-shared-planning-v1',
+      contractVersion: 1,
+      capturedAt: new Date().toISOString()
+    };
+    const [locations, planning] = await Promise.all([
+      callDiagnosticSnapshot(
+        app.ajrmMarineLocationDiagnostics,
+        { includeLocations: requestOptions.includeDebugRaw === true }
+      ),
+      callDiagnosticSnapshot(app.ajrmMarinePlanningDiagnostics)
+    ]);
+    if (locations) output.locations = sanitizeDiagnosticValue(locations);
+    if (planning) output.planning = sanitizeDiagnosticValue(planning);
+    return Object.keys(output).length > 3 ? output : null;
+  }
+
+  async function callDiagnosticSnapshot(service, request = {}) {
+    if (!service || typeof service.snapshot !== 'function') return null;
+    try {
+      return await service.snapshot(request);
+    } catch (err) {
+      logDebug(`Shared planning diagnostic snapshot failed: ${err && err.message ? err.message : err}`);
+      return {
+        contract: service.contract || null,
+        error: err && err.message ? err.message : String(err)
+      };
+    }
   }
 
   function snapshotStatus() {
@@ -967,6 +1014,31 @@ module.exports = function startPlugin(app) {
     return Math.round(value * factor) / factor;
   }
 
+  function sanitizeDiagnosticValue(value, seen = new WeakSet()) {
+    if (value === null || typeof value !== 'object') return value;
+    if (seen.has(value)) return '[Circular]';
+    seen.add(value);
+    if (Array.isArray(value)) {
+      const result = value.map(item => sanitizeDiagnosticValue(item, seen));
+      seen.delete(value);
+      return result;
+    }
+    const result = {};
+    Object.entries(value).forEach(([key, item]) => {
+      const normalizedKey = key.replace(/[^a-z0-9]/gi, '').toLowerCase();
+      if (
+        /^(apikey|ukhoapikey|password|passphrase|secret|token|authorization|cookie|privatekey|clientsecret)$/.test(normalizedKey) ||
+        normalizedKey.endsWith('accountemail')
+      ) {
+        result[key] = item ? '[REDACTED]' : item;
+      } else {
+        result[key] = sanitizeDiagnosticValue(item, seen);
+      }
+    });
+    seen.delete(value);
+    return result;
+  }
+
   function loadSuiteDiagnostics() {
     if (!app || typeof app.getSelfPath !== 'function') return null;
     const paths = {
@@ -978,7 +1050,10 @@ module.exports = function startPlugin(app) {
       ajrmMarineAudio: 'plugins.ajrmMarineAudio',
       ajrmMarineConsole: 'plugins.ajrmMarineConsole',
       ajrmMarineGpsIntegrity: 'plugins.ajrmMarineGpsIntegrity',
-      ajrmMarineNavigationReference: 'plugins.ajrmMarineNavigationReference'
+      ajrmMarineNavigationReference: 'plugins.ajrmMarineNavigationReference',
+      ajrmMarineLocationEditor: 'plugins.ajrmMarineLocationEditor',
+      ajrmMarineLocations: 'plugins.ajrmMarineLocations',
+      ajrmMarinePlanning: 'plugins.ajrmMarinePlanning'
     };
     const output = {};
     Object.keys(paths).forEach(key => {

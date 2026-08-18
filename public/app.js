@@ -13,6 +13,7 @@ const controls = {
   includeAisPlusAudio: document.getElementById('includeAisPlusAudio'),
   includeDebugRaw: document.getElementById('includeDebugRaw'),
   includeInstalledApps: document.getElementById('includeInstalledApps'),
+  includeSharedPlanningData: document.getElementById('includeSharedPlanningData'),
   maxTargetAgeSeconds: document.getElementById('maxTargetAgeSeconds'),
   maxAisRangeNm: document.getElementById('maxAisRangeNm')
 };
@@ -66,6 +67,7 @@ async function loadSettings() {
     controls.includeAisPlusAudio.checked = options.includeAisPlusAudio !== false;
     controls.includeDebugRaw.checked = Boolean(options.includeDebugRaw);
     controls.includeInstalledApps.checked = options.includeInstalledApps !== false;
+    controls.includeSharedPlanningData.checked = options.includeSharedPlanningData !== false;
     controls.maxTargetAgeSeconds.value = options.maxTargetAgeSeconds || 120;
     controls.maxAisRangeNm.value = options.maxAisRangeNm || 6;
   } catch (err) {
@@ -107,6 +109,7 @@ function snapshotQuery() {
   params.set('includeAisPlusHarbourRegions', String(controls.includeAisPlusHarbourRegions.checked));
   params.set('includeAisPlusAudio', String(controls.includeAisPlusAudio.checked));
   params.set('includeInstalledApps', String(controls.includeInstalledApps.checked));
+  params.set('includeSharedPlanningData', String(controls.includeSharedPlanningData.checked));
   params.set('includeDebugRaw', String(controls.includeDebugRaw.checked));
   params.set('maxTargetAgeSeconds', controls.maxTargetAgeSeconds.value || '120');
   params.set('maxAisRangeNm', controls.maxAisRangeNm.value || '6');

@@ -22,6 +22,7 @@ const DEFAULT_OPTIONS = Object.freeze({
   includeAisPlusAudio: true,
   includeInstalledApps: true,
   includeSuiteDiagnostics: true,
+  includeSharedPlanningData: true,
   includeDebugRaw: false,
   signalKBaseUrl: 'https://127.0.0.1:3443',
   allowRemoteAccess: false
@@ -37,7 +38,8 @@ const SNAPSHOT_PRESETS = Object.freeze({
     includeAisPlus: true,
     includeAisPlusAudio: true,
     includeInstalledApps: true,
-    includeSuiteDiagnostics: true
+    includeSuiteDiagnostics: true,
+    includeSharedPlanningData: true
   },
   debug: {
     maxTargetAgeSeconds: 600,
@@ -47,7 +49,8 @@ const SNAPSHOT_PRESETS = Object.freeze({
     includeAisPlus: true,
     includeAisPlusAudio: true,
     includeInstalledApps: true,
-    includeSuiteDiagnostics: true
+    includeSuiteDiagnostics: true,
+    includeSharedPlanningData: true
   }
 });
 
@@ -117,6 +120,10 @@ function normalizeOptions(input) {
     includeAisPlusAudio: booleanValue(source.includeAisPlusAudio, DEFAULT_OPTIONS.includeAisPlusAudio),
     includeInstalledApps: booleanValue(source.includeInstalledApps, DEFAULT_OPTIONS.includeInstalledApps),
     includeSuiteDiagnostics: booleanValue(source.includeSuiteDiagnostics, DEFAULT_OPTIONS.includeSuiteDiagnostics),
+    includeSharedPlanningData: booleanValue(
+      source.includeSharedPlanningData,
+      DEFAULT_OPTIONS.includeSharedPlanningData
+    ),
     includeDebugRaw: booleanValue(source.includeDebugRaw, DEFAULT_OPTIONS.includeDebugRaw),
     signalKBaseUrl: textValue(source.signalKBaseUrl, DEFAULT_OPTIONS.signalKBaseUrl),
     allowRemoteAccess: booleanValue(source.allowRemoteAccess, DEFAULT_OPTIONS.allowRemoteAccess)
@@ -143,6 +150,7 @@ function optionsWithQueryOverrides(baseOptions, query) {
   setBooleanOverride(options, source, 'includeAisPlusAudio');
   setBooleanOverride(options, source, 'includeInstalledApps');
   setBooleanOverride(options, source, 'includeSuiteDiagnostics');
+  setBooleanOverride(options, source, 'includeSharedPlanningData');
   setBooleanOverride(options, source, 'includeDebugRaw');
   setNumberOverride(options, source, 'maxSelfValueAgeSeconds');
   setNumberOverride(options, source, 'maxTargetAgeSeconds');

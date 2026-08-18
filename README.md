@@ -24,6 +24,11 @@ Traffic, and removes retired Logger, Companion and announcer compatibility.
 - Long-voyage diagnostics from AJRM Marine Traffic, Navigation Reference,
   Capture, DR Plotter, GPS Integrity, Simulator, Notifications, and
   compact Signal K chart resources
+- Shared Location Editor state: catalogue counts, selected tide station and
+  full last-fetched tidal events, full last-fetched weather and marine hourly
+  series, source/freshness provenance, and anchoring-assistance state
+- Planning readiness, Gate Passage settings and location constants, Anchor
+  Force state, and the current live Signal K planning inputs
 - Active `vessels.self.notifications.*` messages
 - Legacy Announce AIS Messages live/spoken output when enabled
 
@@ -46,6 +51,13 @@ The plugin understands the enriched AIS hand-off paths:
 - `navigation.closestApproach.enriched.passTypeLabel`
 - `navigation.closestApproach.enriched.spokenSummary`
 - `vessels.self.notifications.collision.*`
+
+Shared planning diagnostics are read from the plugins' in-process services and
+therefore describe data already held by the suite; taking a Snapshot does not
+trigger an external tide or weather fetch. Provider hourly/event arrays are
+included in standard snapshots. Enable **Debug raw** when the full versioned
+location catalogue is also needed. Snapshot recursively redacts credential and
+account-identity fields from all cross-plugin diagnostic payloads.
 
 When the related checkboxes are enabled, the server also fetches local status
 from:
@@ -98,6 +110,7 @@ By default, the API only serves localhost requests. Enable `Allow remote HTTP/br
 - Include AJRM Marine harbour region list
 - Include AJRM Marine Audio state
 - Include installed app versions
+- Include locations, tides, weather and planning diagnostics
 - Include debug/raw fields
 - Allow remote HTTP/browser access
 
@@ -134,7 +147,7 @@ cd ~/.signalk
 2. Install the public GitHub repo as a Signal K dependency:
 
 ```sh
-npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.7.3 --omit=dev --no-package-lock
+npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.7.4 --omit=dev --no-package-lock
 ```
 
 3. Restart Signal K:
@@ -155,7 +168,7 @@ Reinstall it from `~/.signalk` so npm records it again:
 
 ```sh
 cd ~/.signalk
-npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.7.3 --omit=dev --no-package-lock
+npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.7.4 --omit=dev --no-package-lock
 sudo systemctl restart signalk
 ```
 
@@ -165,7 +178,7 @@ The public HTTPS install URL does not require a GitHub SSH key.
 
 ```sh
 cd ~/.signalk
-npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.7.3 --omit=dev --no-package-lock
+npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.7.4 --omit=dev --no-package-lock
 sudo systemctl restart signalk
 ```
 

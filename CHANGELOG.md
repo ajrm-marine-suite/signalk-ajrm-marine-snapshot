@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.4
+
+- Capture the new shared Location Editor and Planning diagnostic contracts by
+  default without causing a tide or weather network refresh.
+- Retain the full last-fetched tide-event and weather/marine hourly series,
+  their station/context, source, freshness and provenance, plus anchoring
+  assistance, planner settings/constants/state and current live inputs.
+- Keep normal snapshots compact by recording catalogue counts and type counts;
+  **Debug raw** additionally captures the full versioned location catalogue.
+- Recursively redact API keys, secrets, tokens, passwords and account email
+  fields before adding cross-plugin diagnostic data to a snapshot.
+
 ## 0.7.3
 
 - Give Snapshot action buttons the suite's raised three-dimensional treatment,

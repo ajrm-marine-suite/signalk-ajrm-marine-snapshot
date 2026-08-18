@@ -825,6 +825,58 @@ test('in-process snapshot API includes long voyage diagnostics', async () => {
   }
 });
 
+test('snapshot includes full shared tide, weather and planning diagnostics while redacting credentials', async () => {
+  const app = fakeAppWithConfig({}, await fs.mkdtemp(path.join(os.tmpdir(), 'ai-snapshot-planning-')));
+  app.ajrmMarineLocationDiagnostics = {
+    contract: 'ajrm-marine-location-diagnostics-v1',
+    async snapshot(request) {
+      return {
+        contract: this.contract,
+        catalogue: { count: 2, locations: request.includeLocations ? [{ id: 'place-1' }] : undefined },
+        tides: {
+          subscriptionTier: 'discovery',
+          latest: { events: [{ type: 'high', at: '2026-08-18T12:00:00Z', heightM: 3.2 }] },
+          ukhoApiKey: 'do-not-share'
+        },
+        weather: {
+          latest: {
+            hourly: {
+              forecast: { hourly: { time: ['2026-08-18T12:00:00Z'], wind_speed_10m: [8.2] } },
+              marine: { hourly: { time: ['2026-08-18T12:00:00Z'], wave_height: [1.4] } }
+            }
+          }
+        }
+      };
+    }
+  };
+  app.ajrmMarinePlanningDiagnostics = {
+    contract: 'ajrm-marine-planning-diagnostics-v1',
+    async snapshot() {
+      return {
+        contract: this.contract,
+        gate: { settings: { ukhoApiKey: 'secret', selectedLocation: 'Cuan Sound' } },
+        anchor: { state: { tideData: { ukhoAccountEmail: 'person@example.test' } } }
+      };
+    }
+  };
+  const route = snapshotRouteHandler(startPlugin(app));
+  const snapshot = await invokeSnapshotRoute(route, '127.0.0.1', {
+    includeAisPlus: 'false',
+    includeAisPlusAudio: 'false',
+    includeInstalledApps: 'false',
+    includeSuiteDiagnostics: 'false',
+    includeSharedPlanningData: 'true',
+    includeDebugRaw: 'true'
+  });
+
+  assert.equal(snapshot.sharedPlanning.locations.catalogue.locations[0].id, 'place-1');
+  assert.equal(snapshot.sharedPlanning.locations.tides.latest.events[0].heightM, 3.2);
+  assert.equal(snapshot.sharedPlanning.locations.weather.latest.hourly.marine.hourly.wave_height[0], 1.4);
+  assert.equal(snapshot.sharedPlanning.locations.tides.ukhoApiKey, '[REDACTED]');
+  assert.equal(snapshot.sharedPlanning.planning.gate.settings.ukhoApiKey, '[REDACTED]');
+  assert.equal(snapshot.sharedPlanning.planning.anchor.state.tideData.ukhoAccountEmail, '[REDACTED]');
+});
+
 test('in-process snapshot API reports browser access readiness', async () => {
   const app = fakeAppWithConfig({}, await fs.mkdtemp(path.join(os.tmpdir(), 'ai-snapshot-status-')));
   const plugin = startPlugin(app);
