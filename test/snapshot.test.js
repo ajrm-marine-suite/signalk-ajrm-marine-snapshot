@@ -500,7 +500,7 @@ test('query overrides cannot enable remote access', () => {
       allowRemoteAccess: false,
       includeAllTargets: false,
       includeAisPlus: true,
-      includeAisPlusHarbourRegions: false,
+      includeLocationProfileAreas: false,
       includeAisPlusAudio: true,
       includeInstalledApps: true
     },
@@ -508,7 +508,7 @@ test('query overrides cannot enable remote access', () => {
       allowRemoteAccess: 'true',
       includeAllTargets: 'true',
       includeAisPlus: 'false',
-      includeAisPlusHarbourRegions: 'true',
+      includeLocationProfileAreas: 'true',
       includeAisPlusAudio: 'false',
       includeInstalledApps: 'false'
     }
@@ -517,7 +517,7 @@ test('query overrides cannot enable remote access', () => {
   assert.equal(options.allowRemoteAccess, false);
   assert.equal(options.includeAllTargets, true);
   assert.equal(options.includeAisPlus, false);
-  assert.equal(options.includeAisPlusHarbourRegions, true);
+  assert.equal(options.includeLocationProfileAreas, true);
   assert.equal(options.includeAisPlusAudio, false);
   assert.equal(options.includeInstalledApps, false);
 });
@@ -547,24 +547,22 @@ test('snapshot presets centralize voyage and debug capture defaults', () => {
   assert.equal(debug.includeDebugRaw, true);
 });
 
-test('AJRM Marine snapshot keeps the harbour list optional', async () => {
-  const harbourPayload = {
-    regions: [
+test('AJRM Marine snapshot keeps the Locations profile-area list optional', async () => {
+  const profileAreaPayload = {
+    profileAreas: [
       {
-        id: 'harbour-a',
-        name: 'Harbour: A',
-        geometry: {
-          type: 'Polygon',
-          coordinates: [[[1, 2], [3, 2], [3, 4], [1, 2]]]
-        }
+        id: 'area-a',
+        name: 'A',
+        types: ['harbour'],
+        feature: { geometry: {
+          type: 'Polygon', coordinates: [[[1, 2], [3, 2], [3, 4], [1, 2]]]
+        } }
       },
       {
-        id: 'harbour-b',
-        name: 'Harbour: B',
-        geometry: {
-          type: 'Point',
-          coordinates: [5, 6]
-        }
+        id: 'area-b',
+        name: 'B',
+        types: ['anchorage'],
+        feature: { geometry: { type: 'Point', coordinates: [5, 6] } }
       }
     ]
   };
@@ -580,9 +578,9 @@ test('AJRM Marine snapshot keeps the harbour list optional', async () => {
       }));
       return;
     }
-    if (requestPath === '/plugins/signalk-ajrm-marine-display/harbourRegions') {
+    if (requestPath === '/plugins/signalk-ajrm-marine-display/profileAreas') {
       res.writeHead(200, { 'content-type': 'application/json' });
-      res.end(JSON.stringify(harbourPayload));
+      res.end(JSON.stringify(profileAreaPayload));
       return;
     }
     res.writeHead(404, { 'content-type': 'application/json' });
@@ -601,17 +599,17 @@ test('AJRM Marine snapshot keeps the harbour list optional', async () => {
     const compact = await invokeSnapshotRoute(route, host, baseQuery);
     const expanded = await invokeSnapshotRoute(route, host, {
       ...baseQuery,
-      includeAisPlusHarbourRegions: 'true'
+      includeLocationProfileAreas: 'true'
     });
 
-    assert.equal(compact.ajrmMarine.harbours.count, 2);
+    assert.equal(compact.ajrmMarine.profileAreas.count, 2);
     assert.equal(compact.ajrmMarine.traffic.plugin, 'signalk-ajrm-marine-traffic');
     assert.equal(compact.ajrmMarine.traffic.profiles.current, 'coastal');
-    assert.equal(compact.ajrmMarine.harbours.regions, undefined);
-    assert.equal(expanded.ajrmMarine.harbours.count, 2);
-    assert.deepEqual(expanded.ajrmMarine.harbours.regions, [
-      { id: 'harbour-a', name: 'Harbour: A', bounds: [1, 2, 3, 4] },
-      { id: 'harbour-b', name: 'Harbour: B', bounds: [5, 6, 5, 6] }
+    assert.equal(compact.ajrmMarine.profileAreas.areas, undefined);
+    assert.equal(expanded.ajrmMarine.profileAreas.count, 2);
+    assert.deepEqual(expanded.ajrmMarine.profileAreas.areas, [
+      { id: 'area-a', name: 'A', types: ['harbour'], bounds: [1, 2, 3, 4] },
+      { id: 'area-b', name: 'B', types: ['anchorage'], bounds: [5, 6, 5, 6] }
     ]);
   } finally {
     await new Promise(resolve => server.close(resolve));

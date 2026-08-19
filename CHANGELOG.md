@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.6
+
+- Capture Display's direct Locations profile-area projection instead of the
+  retired harbour-region endpoint.
+- Rename the optional full-list control and snapshot output to profile areas.
+- Ship a package-root 120-pixel PNG icon for reliable Signal K Webapps display.
+
 ## 0.7.5
 
 - Resolve Location Editor and Planning diagnostics through their process-wide

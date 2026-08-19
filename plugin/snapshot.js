@@ -18,7 +18,7 @@ const DEFAULT_OPTIONS = Object.freeze({
   includeNotifications: true,
   includeElectrical: true,
   includeAisPlus: true,
-  includeAisPlusHarbourRegions: false,
+  includeLocationProfileAreas: false,
   includeAisPlusAudio: true,
   includeInstalledApps: true,
   includeSuiteDiagnostics: true,
@@ -113,9 +113,9 @@ function normalizeOptions(input) {
     includeNotifications: booleanValue(source.includeNotifications, DEFAULT_OPTIONS.includeNotifications),
     includeElectrical: booleanValue(source.includeElectrical, DEFAULT_OPTIONS.includeElectrical),
     includeAisPlus: booleanValue(source.includeAisPlus, DEFAULT_OPTIONS.includeAisPlus),
-    includeAisPlusHarbourRegions: booleanValue(
-      source.includeAisPlusHarbourRegions,
-      DEFAULT_OPTIONS.includeAisPlusHarbourRegions
+    includeLocationProfileAreas: booleanValue(
+      source.includeLocationProfileAreas,
+      DEFAULT_OPTIONS.includeLocationProfileAreas
     ),
     includeAisPlusAudio: booleanValue(source.includeAisPlusAudio, DEFAULT_OPTIONS.includeAisPlusAudio),
     includeInstalledApps: booleanValue(source.includeInstalledApps, DEFAULT_OPTIONS.includeInstalledApps),
@@ -146,7 +146,7 @@ function optionsWithQueryOverrides(baseOptions, query) {
   setBooleanOverride(options, source, 'includeNotifications');
   setBooleanOverride(options, source, 'includeElectrical');
   setBooleanOverride(options, source, 'includeAisPlus');
-  setBooleanOverride(options, source, 'includeAisPlusHarbourRegions');
+  setBooleanOverride(options, source, 'includeLocationProfileAreas');
   setBooleanOverride(options, source, 'includeAisPlusAudio');
   setBooleanOverride(options, source, 'includeInstalledApps');
   setBooleanOverride(options, source, 'includeSuiteDiagnostics');

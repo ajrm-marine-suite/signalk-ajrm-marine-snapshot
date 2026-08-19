@@ -9,7 +9,7 @@ const controls = {
   includeNotifications: document.getElementById('includeNotifications'),
   includeElectrical: document.getElementById('includeElectrical'),
   includeAisPlus: document.getElementById('includeAisPlus'),
-  includeAisPlusHarbourRegions: document.getElementById('includeAisPlusHarbourRegions'),
+  includeLocationProfileAreas: document.getElementById('includeLocationProfileAreas'),
   includeAisPlusAudio: document.getElementById('includeAisPlusAudio'),
   includeDebugRaw: document.getElementById('includeDebugRaw'),
   includeInstalledApps: document.getElementById('includeInstalledApps'),
@@ -63,7 +63,7 @@ async function loadSettings() {
     controls.includeNotifications.checked = options.includeNotifications !== false;
     controls.includeElectrical.checked = options.includeElectrical !== false;
     controls.includeAisPlus.checked = options.includeAisPlus !== false;
-    controls.includeAisPlusHarbourRegions.checked = Boolean(options.includeAisPlusHarbourRegions);
+    controls.includeLocationProfileAreas.checked = Boolean(options.includeLocationProfileAreas);
     controls.includeAisPlusAudio.checked = options.includeAisPlusAudio !== false;
     controls.includeDebugRaw.checked = Boolean(options.includeDebugRaw);
     controls.includeInstalledApps.checked = options.includeInstalledApps !== false;
@@ -106,7 +106,7 @@ function snapshotQuery() {
   params.set('includeNotifications', String(controls.includeNotifications.checked));
   params.set('includeElectrical', String(controls.includeElectrical.checked));
   params.set('includeAisPlus', String(controls.includeAisPlus.checked));
-  params.set('includeAisPlusHarbourRegions', String(controls.includeAisPlusHarbourRegions.checked));
+  params.set('includeLocationProfileAreas', String(controls.includeLocationProfileAreas.checked));
   params.set('includeAisPlusAudio', String(controls.includeAisPlusAudio.checked));
   params.set('includeInstalledApps', String(controls.includeInstalledApps.checked));
   params.set('includeSharedPlanningData', String(controls.includeSharedPlanningData.checked));

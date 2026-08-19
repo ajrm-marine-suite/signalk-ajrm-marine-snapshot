@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Signal K AJRM Marine Snapshot",
-    "version": "0.7.5",
+    "version": "0.7.6",
     "description": "Local snapshot endpoints for a compact Signal K JSON payload intended for manual ChatGPT copy/paste."
   },
   "servers": [
@@ -37,7 +37,7 @@
             }
           },
           {
-            "name": "includeAisPlusHarbourRegions",
+            "name": "includeLocationProfileAreas",
             "in": "query",
             "schema": {
               "type": "boolean"

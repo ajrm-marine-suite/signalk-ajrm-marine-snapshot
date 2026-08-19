@@ -35,7 +35,6 @@ const KNOWN_SUITE_PACKAGES = new Set([
   'signalk-ajrm-marine-display',
   'signalk-ajrm-marine-traffic',
   'signalk-ajrm-marine-gps-integrity',
-  'signalk-ajrm-marine-harbour-editor',
   'signalk-ajrm-marine-location-editor',
   'signalk-ajrm-marine-planning',
   'signalk-ajrm-marine-instruments',
@@ -112,11 +111,11 @@ module.exports = function startPlugin(app) {
           description: 'Adds AJRM Marine profiles, sensitivity, repeat intervals, auto-profile status, harbour count, active alert events, speech settings, and recent announcement log when AJRM Marine is installed.',
           default: DEFAULT_OPTIONS.includeAisPlus
         },
-        includeAisPlusHarbourRegions: {
+        includeLocationProfileAreas: {
           type: 'boolean',
-          title: 'Include AJRM Marine harbour region list',
-          description: 'Adds every AJRM Marine harbour region and bounds. This can make the snapshot very large, so leave it disabled unless debugging harbour data.',
-          default: DEFAULT_OPTIONS.includeAisPlusHarbourRegions
+          title: 'Include Locations profile-area list',
+          description: 'Adds every automatic profile area and its bounds. This can make the snapshot large, so leave it disabled unless debugging location data.',
+          default: DEFAULT_OPTIONS.includeLocationProfileAreas
         },
         includeAisPlusAudio: {
           type: 'boolean',
@@ -169,8 +168,8 @@ module.exports = function startPlugin(app) {
       includeDebugRaw: {
         'ui:help': 'Raw fields may include more vessel data than needed for ChatGPT. Keep this off unless debugging.'
       },
-      includeAisPlusHarbourRegions: {
-        'ui:help': 'The full harbour list is large. Keep this off for normal ChatGPT snapshots.'
+      includeLocationProfileAreas: {
+        'ui:help': 'The full profile-area list can be large. Keep this off for normal support snapshots.'
       },
       allowRemoteAccess: {
         'ui:help': 'Only enable this on a trusted private network.'
@@ -424,17 +423,17 @@ module.exports = function startPlugin(app) {
   async function loadAjrmMarineSnapshot(req, options) {
     const [
       traffic,
-      harbourRegions,
+      profileAreas,
       alertEvents,
       announcementLog
     ] = await Promise.all([
       fetchLocalJson(req, '/plugins/signalk-ajrm-marine-traffic/status'),
-      fetchLocalJson(req, '/plugins/signalk-ajrm-marine-display/harbourRegions'),
+      fetchLocalJson(req, '/plugins/signalk-ajrm-marine-display/profileAreas'),
       fetchLocalJson(req, '/plugins/signalk-ajrm-marine-display/alertEvents'),
       fetchLocalJson(req, '/plugins/signalk-ajrm-marine-display/announcementLog?limit=12')
     ]);
 
-    if (!traffic && !harbourRegions && !alertEvents && !announcementLog) return null;
+    if (!traffic && !profileAreas && !alertEvents && !announcementLog) return null;
 
     const output = {
       contract: 'ajrm-marine-suite-snapshot',
@@ -443,10 +442,10 @@ module.exports = function startPlugin(app) {
 
     if (traffic) output.traffic = compactTrafficStatus(traffic);
 
-    if (harbourRegions && Array.isArray(harbourRegions.regions)) {
-      output.harbours = harbourRegionsSnapshot(
-        harbourRegions.regions,
-        options.includeAisPlusHarbourRegions
+    if (profileAreas && Array.isArray(profileAreas.profileAreas)) {
+      output.profileAreas = profileAreasSnapshot(
+        profileAreas.profileAreas,
+        options.includeLocationProfileAreas
       );
     }
 
@@ -963,22 +962,23 @@ module.exports = function startPlugin(app) {
     target[key] = value;
   }
 
-  function summarizeHarbourRegion(region) {
+  function summarizeProfileArea(area) {
     const output = {
-      id: region.id,
-      name: region.name
+      id: area.id,
+      name: area.name,
+      types: area.types
     };
-    const bounds = geometryBounds(region.geometry);
+    const bounds = geometryBounds(area.feature?.geometry || area.geometry);
     if (bounds) output.bounds = bounds;
     return output;
   }
 
-  function harbourRegionsSnapshot(regions, includeRegions) {
+  function profileAreasSnapshot(areas, includeAreas) {
     const output = {
-      count: regions.length
+      count: areas.length
     };
-    if (includeRegions) {
-      output.regions = regions.map(region => summarizeHarbourRegion(region));
+    if (includeAreas) {
+      output.areas = areas.map(area => summarizeProfileArea(area));
     }
     return output;
   }
