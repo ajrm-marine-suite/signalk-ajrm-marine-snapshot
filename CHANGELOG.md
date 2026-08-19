@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.7
+
+- Serve the Snapshot Webapps icon from the public webapp URL and verify the
+  declared Signal K icon resolves during tests.
+
 ## 0.7.6
 
 - Capture Display's direct Locations profile-area projection instead of the
