@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.8
+
+- Package the Snapshot icon at both the npm root for App Store metadata and
+  the public webapp root for the installed Webapps catalogue.
+
 ## 0.7.7
 
 - Serve the Snapshot Webapps icon from the public webapp URL and verify the
