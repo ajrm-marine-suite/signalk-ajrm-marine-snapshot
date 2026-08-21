@@ -7,10 +7,9 @@ It is not an MCP server and it does not call any AI service. It keeps selected S
 Version `0.7.9` records the standalone Tidal Database diagnostics, including
 cache freshness and current port selection.
 
-Version `0.7.0` is the reviewed Signal K baseline. Snapshot remains a small
-standalone diagnostic provider because both Capture and Console consume its
-in-process API. It now reads collision policy and target state directly from
-Traffic, and removes retired Logger, Companion and announcer compatibility.
+Snapshot remains a small standalone diagnostic provider because Voyages and
+Console consume its in-process API. It reads authoritative state from the
+current suite services and contains no retired-plugin adapters.
 
 ## What It Captures
 
@@ -20,20 +19,19 @@ Traffic, and removes retired Logger, Companion and announcer compatibility.
 - AIS target identity, range, bearing, motion, AIS GPS antenna offsets, CPA/TCPA, CPA reference, and risk status
 - Enriched encounter fields from AJRM Marine
 - Traffic alarm profiles, target state, auto-profile and audio policy, plus
-  Display alert history, announcement history and harbour count
-- AJRM Marine harbour region bounds only when the separate harbour-list option is enabled
+  Display alert history, announcement history and profile-area count
+- Location profile-area geometry only when the separate location-list option is enabled
 - AJRM Marine Audio render, queue, local playback, radio stream, volume, ping, voice, and recent event status when AJRM Marine Audio is installed
 - Installed Signal K plugin/webapp package names, display names, versions, and Git/npm source specs
-- Long-voyage diagnostics from AJRM Marine Traffic, Navigation Reference,
-  Capture, DR Plotter, GPS Integrity, Simulator, Notifications, and
+- Long-voyage diagnostics from AJRM Marine Traffic, Navigation Integrity,
+  Voyages, its DR Plotter, Simulator, Notifications, and
   compact Signal K chart resources
-- Shared Location Editor state: catalogue counts, selected tide station and
-  full last-fetched tidal events, full last-fetched weather and marine hourly
-  series, source/freshness provenance, and anchoring-assistance state
+- Shared Location Editor catalogue and anchoring state, Tidal Database station
+  cache and current projection, Weather Database provider caches and current
+  forecast, with source/freshness provenance
 - Planning readiness, Gate Passage settings and location constants, Anchor
   Force state, and the current live Signal K planning inputs
 - Active `vessels.self.notifications.*` messages
-- Legacy Announce AIS Messages live/spoken output when enabled
 
 Snapshot never treats raw `navigation.headingMagnetic` as true heading. When
 AJRM Marine Navigation Reference is present it records the selected compass or
@@ -110,7 +108,7 @@ By default, the API only serves localhost requests. Enable `Allow remote HTTP/br
 - Include notifications
 - Include electrical data
 - Include AJRM Marine server state
-- Include AJRM Marine harbour region list
+- Include Location profile-area list
 - Include AJRM Marine Audio state
 - Include installed app versions
 - Include locations, tides, weather and planning diagnostics
@@ -150,7 +148,7 @@ cd ~/.signalk
 2. Install the public GitHub repo as a Signal K dependency:
 
 ```sh
-npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.7.9 --omit=dev --no-package-lock
+npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.7.11 --omit=dev --no-package-lock
 ```
 
 3. Restart Signal K:
@@ -171,7 +169,7 @@ Reinstall it from `~/.signalk` so npm records it again:
 
 ```sh
 cd ~/.signalk
-npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.7.9 --omit=dev --no-package-lock
+npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.7.11 --omit=dev --no-package-lock
 sudo systemctl restart signalk
 ```
 
@@ -181,7 +179,7 @@ The public HTTPS install URL does not require a GitHub SSH key.
 
 ```sh
 cd ~/.signalk
-npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.7.9 --omit=dev --no-package-lock
+npm install git+https://github.com/ajrm-marine-suite/signalk-ajrm-marine-snapshot.git#v0.7.11 --omit=dev --no-package-lock
 sudo systemctl restart signalk
 ```
 

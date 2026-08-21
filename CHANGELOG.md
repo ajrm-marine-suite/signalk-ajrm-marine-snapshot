@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.11 — 2026-08-21
+
+- Removes the retired Voyage Viewer package from installed-suite discovery.
+- Documents diagnostics against current Navigation Integrity, Voyages,
+  Locations, Tidal Database, Weather Database and Planning ownership.
+
 ## 0.7.10 — 2026-08-21
 
 - Capture standalone Weather Database provider, cache, provenance and latest-forecast diagnostics separately from Locations and Tidal Database.
