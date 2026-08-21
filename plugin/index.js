@@ -26,6 +26,7 @@ const {
 
 const AJRM_MARINE_SNAPSHOT_API_REGISTRY = Symbol.for('mcdonaldajr.ajrmMarineSnapshotApi');
 const AJRM_MARINE_LOCATION_DIAGNOSTICS_REGISTRY = Symbol.for('mcdonaldajr.ajrmMarineLocationDiagnostics');
+const AJRM_MARINE_TIDAL_DIAGNOSTICS_REGISTRY = Symbol.for('mcdonaldajr.ajrmMarineTidalDiagnostics');
 const AJRM_MARINE_PLANNING_DIAGNOSTICS_REGISTRY = Symbol.for('mcdonaldajr.ajrmMarinePlanningDiagnostics');
 const MAX_FETCH_BYTES = 2 * 1024 * 1024;
 const KNOWN_SUITE_PACKAGES = new Set([
@@ -36,6 +37,7 @@ const KNOWN_SUITE_PACKAGES = new Set([
   'signalk-ajrm-marine-traffic',
   'signalk-ajrm-marine-gps-integrity',
   'signalk-ajrm-marine-location-editor',
+  'signalk-ajrm-marine-tidal-database',
   'signalk-ajrm-marine-planning',
   'signalk-ajrm-marine-instruments',
   'signalk-ajrm-marine-notifications',
@@ -375,16 +377,20 @@ module.exports = function startPlugin(app) {
       contractVersion: 1,
       capturedAt: new Date().toISOString()
     };
-    const [locations, planning] = await Promise.all([
+    const [locations, tides, planning] = await Promise.all([
       callDiagnosticSnapshot(
         app.ajrmMarineLocationDiagnostics || globalThis[AJRM_MARINE_LOCATION_DIAGNOSTICS_REGISTRY],
         { includeLocations: requestOptions.includeDebugRaw === true }
+      ),
+      callDiagnosticSnapshot(
+        app.ajrmMarineTidalDiagnostics || globalThis[AJRM_MARINE_TIDAL_DIAGNOSTICS_REGISTRY]
       ),
       callDiagnosticSnapshot(
         app.ajrmMarinePlanningDiagnostics || globalThis[AJRM_MARINE_PLANNING_DIAGNOSTICS_REGISTRY]
       )
     ]);
     if (locations) output.locations = sanitizeDiagnosticValue(locations);
+    if (tides) output.tides = sanitizeDiagnosticValue(tides);
     if (planning) output.planning = sanitizeDiagnosticValue(planning);
     return Object.keys(output).length > 3 ? output : null;
   }
@@ -1057,6 +1063,7 @@ module.exports = function startPlugin(app) {
       ajrmMarineNavigationReference: 'plugins.ajrmMarineNavigationReference',
       ajrmMarineLocationEditor: 'plugins.ajrmMarineLocationEditor',
       ajrmMarineLocations: 'plugins.ajrmMarineLocations',
+      ajrmMarineTidalDatabase: 'plugins.ajrmMarineTidalDatabase',
       ajrmMarinePlanning: 'plugins.ajrmMarinePlanning'
     };
     const output = {};

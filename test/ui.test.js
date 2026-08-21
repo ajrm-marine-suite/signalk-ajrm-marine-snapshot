@@ -16,8 +16,8 @@ test('Snapshot actions have raised and visibly depressed button states', () => {
   const css = fs.readFileSync(path.join(root, 'public', 'styles.css'), 'utf8');
 
   assert.match(html, /id="copyButton"[^>]*class="primary"/);
-  assert.match(html, /styles\.css\?v=0\.7\.8/);
-  assert.match(html, /app\.js\?v=0\.7\.8/);
+  assert.match(html, /styles\.css\?v=0\.7\.9/);
+  assert.match(html, /app\.js\?v=0\.7\.9/);
   assert.match(css, /0 4px 0 #66716b/);
   assert.match(css, /button:active:not\(:disabled\)/);
   assert.match(css, /transform: translateY\(4px\)/);

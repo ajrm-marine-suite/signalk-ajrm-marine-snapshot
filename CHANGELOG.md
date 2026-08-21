@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.9
+
+- Capture the standalone Tidal Database status, provider cache, definitions,
+  selection, and current prediction through its diagnostics contract.
+- Recognise Tidal Database as an installed AJRM Marine Suite package.
+
 ## 0.7.8
 
 - Package the Snapshot icon at both the npm root for App Store metadata and
