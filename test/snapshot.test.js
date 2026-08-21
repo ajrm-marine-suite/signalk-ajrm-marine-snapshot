@@ -830,22 +830,17 @@ test('snapshot includes cross-plugin tide, weather and planning diagnostics whil
     async snapshot(request) {
       return {
         contract: this.contract,
-        catalogue: { count: 2, locations: request.includeLocations ? [{ id: 'place-1' }] : undefined },
-        tides: {
-          subscriptionTier: 'discovery',
-          latest: { events: [{ type: 'high', at: '2026-08-18T12:00:00Z', heightM: 3.2 }] },
-          ukhoApiKey: 'do-not-share'
-        },
-        weather: {
-          latest: {
-            hourly: {
-              forecast: { hourly: { time: ['2026-08-18T12:00:00Z'], wind_speed_10m: [8.2] } },
-              marine: { hourly: { time: ['2026-08-18T12:00:00Z'], wave_height: [1.4] } }
-            }
-          }
-        }
+        catalogue: { count: 2, locations: request.includeLocations ? [{ id: 'place-1' }] : undefined }
       };
     }
+  };
+  globalThis[Symbol.for('mcdonaldajr.ajrmMarineTidalDiagnostics')] = {
+    contract: 'ajrm-marine-tidal-database-diagnostics-v1',
+    async snapshot() { return { latestProjection: { events: [{ type: 'high', at: '2026-08-18T12:00:00Z', heightM: 3.2 }] }, ukhoApiKey: 'do-not-share' }; }
+  };
+  globalThis[Symbol.for('mcdonaldajr.ajrmMarineWeatherDiagnostics')] = {
+    contract: 'ajrm-marine-weather-database-diagnostics-v1',
+    async snapshot() { return { latestProjection: { hourly: { forecast: { hourly: { time: ['2026-08-18T12:00:00Z'], wind_speed_10m: [8.2] } }, marine: { hourly: { time: ['2026-08-18T12:00:00Z'], wave_height: [1.4] } } } } }; }
   };
   globalThis[Symbol.for('mcdonaldajr.ajrmMarinePlanningDiagnostics')] = {
     contract: 'ajrm-marine-planning-diagnostics-v1',
@@ -859,6 +854,8 @@ test('snapshot includes cross-plugin tide, weather and planning diagnostics whil
   };
   t.after(() => {
     delete globalThis[Symbol.for('mcdonaldajr.ajrmMarineLocationDiagnostics')];
+    delete globalThis[Symbol.for('mcdonaldajr.ajrmMarineTidalDiagnostics')];
+    delete globalThis[Symbol.for('mcdonaldajr.ajrmMarineWeatherDiagnostics')];
     delete globalThis[Symbol.for('mcdonaldajr.ajrmMarinePlanningDiagnostics')];
   });
   const route = snapshotRouteHandler(startPlugin(app));
@@ -872,9 +869,9 @@ test('snapshot includes cross-plugin tide, weather and planning diagnostics whil
   });
 
   assert.equal(snapshot.sharedPlanning.locations.catalogue.locations[0].id, 'place-1');
-  assert.equal(snapshot.sharedPlanning.locations.tides.latest.events[0].heightM, 3.2);
-  assert.equal(snapshot.sharedPlanning.locations.weather.latest.hourly.marine.hourly.wave_height[0], 1.4);
-  assert.equal(snapshot.sharedPlanning.locations.tides.ukhoApiKey, '[REDACTED]');
+  assert.equal(snapshot.sharedPlanning.tides.latestProjection.events[0].heightM, 3.2);
+  assert.equal(snapshot.sharedPlanning.weather.latestProjection.hourly.marine.hourly.wave_height[0], 1.4);
+  assert.equal(snapshot.sharedPlanning.tides.ukhoApiKey, '[REDACTED]');
   assert.equal(snapshot.sharedPlanning.planning.gate.settings.ukhoApiKey, '[REDACTED]');
   assert.equal(snapshot.sharedPlanning.planning.anchor.state.tideData.ukhoAccountEmail, '[REDACTED]');
 });

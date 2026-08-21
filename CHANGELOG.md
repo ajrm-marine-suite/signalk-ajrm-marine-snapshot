@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.10 — 2026-08-21
+
+- Capture standalone Weather Database provider, cache, provenance and latest-forecast diagnostics separately from Locations and Tidal Database.
+
 ## 0.7.9
 
 - Capture the standalone Tidal Database status, provider cache, definitions,
